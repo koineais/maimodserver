@@ -1,244 +1,1021 @@
-# maimodserver紹介 ＆ 絶妙難易度5x5多言語2048
+# maimodserver 画面フィットポータル＆同期掲示板・完全版
 
 <!DOCTYPE html>
-<html lang="ja">
+<html lang="ja" class="h-full w-full overflow-hidden">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>maimodserver & ポップ＆ファン 5x5 2048</title>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800&display=swap" rel="stylesheet">
-    <style>
-        :root {
-            --bg-color: #f6f8fa;
-            --container-bg: #bbada0;
-            --grid-bg: #eee4da;
-            --text-dark: #776e65;
-            --text-light: #f9f6f2;
-            --primary-color: #ff6b6b;
-            --secondary-color: #4ecdc4;
-            --server-primary: #7289da;
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>maimodserver Portal Hub</title>
+  <!-- Tailwind CSS (Allowed Whitelist) -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=DotGothic16&display=swap');
+    
+    .font-pixel {
+      font-family: 'DotGothic16', 'Press Start 2P', monospace;
+    }
+    
+    /* Hide scrollbars completely for forced screen-fit behavior */
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+
+    /* Prevent selection and default drag web actions */
+    .select-none {
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    .swipe-zone {
+      touch-action: none;
+    }
+
+    /* Ensure rendering logic doesn't break canvas sizes */
+    canvas {
+      image-rendering: pixelated;
+    }
+
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 font-sans h-full w-full flex flex-col select-none overflow-hidden antialiased">
+
+  <!-- TOP BAR: Static Height Header (52px) -->
+  <header class="bg-slate-900 border-b border-slate-800 shadow-md px-4 py-2.5 flex justify-between items-center h-[52px] flex-shrink-0 z-50">
+    <div class="flex items-center space-x-2">
+      <span class="text-xl">🟩</span>
+      <h1 class="text-lg font-bold font-pixel tracking-wider text-green-400">maimodserver</h1>
+    </div>
+    <div class="flex space-x-1 bg-slate-950 p-0.5 rounded-lg border border-slate-800">
+      <button id="btn-ja" onclick="switchLanguage('ja')" class="px-2.5 py-0.5 text-xs font-bold rounded transition-all bg-green-600 text-white">JA</button>
+      <button id="btn-en" onclick="switchLanguage('en')" class="px-2.5 py-0.5 text-xs font-bold rounded transition-all text-slate-400 hover:text-white">EN</button>
+    </div>
+  </header>
+
+  <!-- NAVIGATION TABS: Horizontal Scrollable Tab Bar (42px) -->
+  <nav class="bg-slate-900 px-2 border-b border-slate-800 overflow-x-auto no-scrollbar flex space-x-1 h-[42px] flex-shrink-0 z-40">
+    <button onclick="switchTab('intro')" id="tab-intro" class="tab-btn px-3 py-1.5 text-xs font-medium rounded-t-lg transition-all border-b-2 border-green-500 text-green-400 bg-slate-950 flex-shrink-0 flex items-center space-x-1">
+
+      <span>🌐</span> <span data-i18n="navIntro">サーバー紹介</span>
+    </button>
+    <button onclick="switchTab('game2048')" id="tab-game2048" class="tab-btn px-3 py-1.5 text-xs font-medium rounded-t-lg transition-all border-b-2 border-transparent text-slate-400 hover:text-slate-200 flex-shrink-0 flex items-center space-x-1">
+      <span>🔢</span> <span data-i18n="nav2048">5x5 2048</span>
+    </button>
+    <button onclick="switchTab('tetris')" id="tab-tetris" class="tab-btn px-3 py-1.5 text-xs font-medium rounded-t-lg transition-all border-b-2 border-transparent text-slate-400 hover:text-slate-200 flex-shrink-0 flex items-center space-x-1">
+      <span>🧱</span> <span data-i18n="navTetris">テトリス</span>
+    </button>
+    <button onclick="switchTab('snake')" id="tab-snake" class="tab-btn px-3 py-1.5 text-xs font-medium rounded-t-lg transition-all border-b-2 border-transparent text-slate-400 hover:text-slate-200 flex-shrink-0 flex items-center space-x-1">
+      <span>🐍</span> <span data-i18n="navSnake">スネーク</span>
+    </button>
+    <button onclick="switchTab('memory')" id="tab-memory" class="tab-btn px-3 py-1.5 text-xs font-medium rounded-t-lg transition-all border-b-2 border-transparent text-slate-400 hover:text-slate-200 flex-shrink-0 flex items-center space-x-1">
+      <span>🧠</span> <span data-i18n="navMemory">神経衰弱</span>
+    </button>
+    <button onclick="switchTab('board')" id="tab-board" class="tab-btn px-3 py-1.5 text-xs font-medium rounded-t-lg transition-all border-b-2 border-transparent text-slate-400 hover:text-slate-200 flex-shrink-0 flex items-center space-x-1">
+      <span>💬</span> <span data-i18n="navBoard">同期掲示板</span>
+    </button>
+  </nav>
+
+
+  <!-- MAIN VIEWPORT CONTAINER: Flexible Area with strict overflow constraint -->
+  <main class="flex-1 w-full max-w-4xl mx-auto p-3 flex flex-col overflow-hidden relative min-h-0">
+
+    <!-- 1. SERVER INTRO PAGE -->
+    <section id="content-intro" class="tab-content hidden h-full overflow-y-auto no-scrollbar space-y-4 pb-4 min-h-0">
+      <div class="bg-gradient-to-br from-slate-900 via-slate-900 to-green-950/40 border border-slate-800 rounded-xl p-5 shadow-xl relative overflow-hidden flex-shrink-0">
+        <div class="absolute top-0 right-0 transform translate-x-16 -translate-y-16 w-48 h-48 bg-green-500/10 rounded-full blur-3xl pointer-events-none"></div>
+        <div class="inline-block bg-green-900/40 border border-green-700/60 text-green-400 text-[10px] px-2.5 py-0.5 rounded-full font-pixel mb-2" data-i18n="heroBadge">Next-Gen Vanilla Evolution</div>
+        <h2 class="text-2xl font-bold font-pixel text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 via-amber-300 to-green-400 mb-2" data-i18n="introTitle">maimodserver 究極の冒険へ</h2>
+        <p class="text-slate-300 text-xs md:text-sm leading-relaxed mb-4" data-i18n="introSubtitle">
+          クライアントへのMod導入が一切不要（完全バニラ）でありながら、高度なサーバーサイドコマンドと独自の仕掛けによって、これまでにない未知の体験を引き出す次世代のマインクラフトサーバーです。
+        </p>
+        <div class="bg-slate-950/80 p-4 rounded-lg border border-slate-800 flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-2 sm:space-y-0 backdrop-blur-sm">
+          <div>
+            <span class="text-[10px] text-slate-500 block uppercase tracking-wider font-bold" data-i18n="serverAddrLabel">サーバーアドレス</span>
+            <span class="text-sm md:text-base font-mono text-green-300 font-bold select-all">katherine-tomtom.tun.ply.gg</span>
+          </div>
+          <button onclick="copyServerAddress()" id="copy-btn" class="bg-green-600 hover:bg-green-500 text-white font-bold py-2 px-4 rounded-md text-xs transition-all shadow-md flex items-center justify-center space-x-2 flex-shrink-0">
+            <span id="copy-btn-text" data-i18n="copyBtn">アドレスをコピー</span>
+
+          </button>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-3 flex-shrink-0">
+        <div class="bg-slate-900 border border-slate-800 p-4 rounded-lg">
+          <div class="text-base mb-1">✨</div>
+          <h4 class="font-bold text-slate-100 text-xs mb-1" data-i18n="feat1Title">完全バニラで参加可能</h4>
+          <p class="text-[11px] text-slate-400 leading-normal" data-i18n="feat1Desc">面倒な外部Modの設定や重いカスタムランチャーの導入は100%不要。公式クライアントからそのまま接続可能です。</p>
+        </div>
+        <div class="bg-slate-900 border border-slate-800 p-4 rounded-lg">
+          <div class="text-base mb-1">🔮</div>
+          <h4 class="font-bold text-slate-100 text-xs mb-1" data-i18n="feat2Title">魔法のような独自ギミック</h4>
+          <p class="text-[11px] text-slate-400 leading-normal" data-i18n="feat2Desc">特殊コマンド群を極限までチューニング。バニラとは思えない特殊スキルや、不思議な便利ユーティリティが稼働中！</p>
+        </div>
+        <div class="bg-slate-900 border border-slate-800 p-4 rounded-lg">
+          <div class="text-base mb-1">⚔️</div>
+          <h4 class="font-bold text-slate-100 text-xs mb-1" data-i18n="feat3Title">広大なカスタムダンジョン</h4>
+          <p class="text-[11px] text-slate-400 leading-normal" data-i18n="feat3Desc">強力なボスが待ち受ける特製構造物。仲間と協力してギミックを解き明かす、RPGさながらのハラハラした攻略が楽しめます。</p>
+
+        </div>
+      </div>
+
+      <div class="bg-slate-900 border border-slate-800 rounded-lg p-4 space-y-2 flex-shrink-0">
+        <h3 class="text-sm font-bold font-pixel text-yellow-400 flex items-center space-x-2">🚀 <span data-i18n="sectionJoin">サーバーへの接続手順</span></h3>
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center text-[11px]">
+          <div class="bg-slate-950 p-2 rounded border border-slate-800/80">
+            <div class="font-bold text-green-500">01.ゲーム起動</div>
+            <p class="text-slate-400 text-[10px]">「マルチプレイ」を選択</p>
+          </div>
+          <div class="bg-slate-950 p-2 rounded border border-slate-800/80">
+            <div class="font-bold text-green-500">02.サーバー追加</div>
+            <p class="text-slate-400 text-[10px]">「サーバーを追加」をクリック</p>
+          </div>
+          <div class="bg-slate-950 p-2 rounded border border-slate-800/80">
+            <div class="font-bold text-green-500">03.アドレス入力</div>
+            <p class="text-slate-400 text-[10px]">上記アドレスをコピペ</p>
+          </div>
+          <div class="bg-slate-950 p-2 rounded border border-slate-800/80">
+
+            <div class="font-bold text-green-500">04.冒険開始！</div>
+            <p class="text-slate-400 text-[10px]">接続完了！世界を楽しもう</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 2. 5x5 2048 GAME (IPAD SWIPE SUPPORT + PERFECT HEIGHT LOCK) -->
+    <section id="content-game2048" class="tab-content hidden h-full flex flex-col items-center justify-between overflow-hidden min-h-0">
+      <div class="w-full flex justify-between items-center max-w-xs flex-shrink-0">
+        <div>
+          <span class="text-[10px] text-slate-400 block" data-i18n="scoreLabel">スコア</span>
+          <span id="score-2048" class="text-base font-bold font-pixel text-yellow-400">0</span>
+        </div>
+        <div class="flex items-center space-x-2">
+          <div class="flex bg-slate-950 p-0.5 rounded border border-slate-800 text-[10px]">
+            <button id="theme-num-btn" onclick="set2048Theme('number')" class="px-2 py-0.5 rounded bg-blue-600 text-white" data-i18n="themeNumber">数字</button>
+            <button id="theme-ani-btn" onclick="set2048Theme('animal')" class="px-2 py-0.5 rounded text-slate-400" data-i18n="themeAnimal">どうぶつ</button>
+          </div>
+
+          <button onclick="init2048()" class="bg-slate-800 hover:bg-slate-700 text-[10px] font-bold py-0.5 px-2 rounded text-slate-200" data-i18n="restartBtn">リセット</button>
+        </div>
+      </div>
+
+      <!-- Max-bound aspect ratio layout for absolute screen fit -->
+      <div class="bg-slate-950 p-1.5 rounded-xl border-2 border-slate-800 w-full max-w-[280px] xs:max-w-[310px] sm:max-w-[330px] aspect-square grid grid-cols-5 gap-1 shadow-inner swipe-zone flex-shrink-0" id="grid-2048">
+        <!-- JS Cells Dynamic Output -->
+      </div>
+
+      <div class="text-[9px] text-slate-400 text-center select-none flex-shrink-0" data-i18n="support2048Hint">iPad/スマホ: 盤面をスワイプ！ / PC: 矢印キー</div>
+      <div id="msg-2048" class="hidden text-xs font-bold text-center text-red-400 bg-red-950/40 border border-red-900/60 p-1 rounded max-w-xs w-full flex-shrink-0"></div>
+
+      <!-- Compact hardware emulator pad for touch screen users -->
+      <div class="grid grid-cols-3 gap-1 w-28 flex-shrink-0 mb-1">
+        <div></div>
+        <button onclick="move2048('up')" class="w-8 h-8 bg-slate-800 active:bg-slate-700 rounded flex items-center justify-center font-bold border border-slate-700 text-sm">▲</button>
+        <div></div>
+        <button onclick="move2048('left')" class="w-8 h-8 bg-slate-800 active:bg-slate-700 rounded flex items-center justify-center font-bold border border-slate-700 text-sm">◀</button>
+        <div class="w-8 h-8 flex items-center justify-center text-[10px] text-slate-500 font-pixel">5x5</div>
+
+        <button onclick="move2048('right')" class="w-8 h-8 bg-slate-800 active:bg-slate-700 rounded flex items-center justify-center font-bold border border-slate-700 text-sm">▶</button>
+        <div></div>
+        <button onclick="move2048('down')" class="w-8 h-8 bg-slate-800 active:bg-slate-700 rounded flex items-center justify-center font-bold border border-slate-700 text-sm">▼</button>
+        <div></div>
+      </div>
+    </section>
+
+    <!-- 3. TETRIS GAME -->
+    <section id="content-tetris" class="tab-content hidden h-full flex flex-col md:flex-row items-center justify-center gap-3 overflow-hidden min-h-0">
+      <div class="relative bg-slate-950 p-1 rounded-xl border-2 border-slate-800 flex-shrink-0 flex items-center justify-center max-h-[60%] md:max-h-full">
+        <canvas id="tetris-canvas" width="240" height="480" class="bg-slate-950 rounded block h-[280px] xs:h-[320px] md:h-[380px] w-auto aspect-[1/2]"></canvas>
+        <div id="msg-tetris" class="absolute inset-0 bg-slate-950/90 rounded-xl flex flex-col items-center justify-center text-center hidden p-4">
+          <p class="text-base font-bold font-pixel text-red-500 mb-2" data-i18n="gameOver">ゲームオーバー！</p>
+          <button onclick="startTetris()" class="bg-green-600 hover:bg-green-500 text-white font-bold py-1.5 px-4 rounded text-xs" data-i18n="restartBtn">もう一度プレイ</button>
+        </div>
+      </div>
+
+      <div class="w-full max-w-[200px] flex flex-col items-center justify-center space-y-2 flex-shrink-0">
+        <div class="w-full bg-slate-950 p-2 rounded border border-slate-800 flex justify-between items-center">
+
+          <div>
+            <span class="text-[9px] text-slate-500 block uppercase font-bold" data-i18n="scoreLabel">スコア</span>
+            <span id="score-tetris" class="text-base font-bold font-pixel text-yellow-400">0</span>
+          </div>
+          <button onclick="startTetris()" class="bg-slate-800 hover:bg-slate-700 text-[9px] font-bold py-1 px-2 rounded text-slate-200" data-i18n="restartBtn">リセット</button>
+        </div>
+
+        <div class="w-full bg-slate-950 p-2 rounded border border-slate-800 flex flex-col items-center space-y-1">
+          <div class="grid grid-cols-3 gap-1.5 w-28">
+            <div></div>
+            <button onclick="handleTetrisControl('rotate')" class="w-8 h-8 bg-slate-800 active:bg-slate-700 rounded-full flex items-center justify-center border border-slate-700 text-xs text-blue-400">↻</button>
+            <div></div>
+            <button onclick="handleTetrisControl('left')" class="w-8 h-8 bg-slate-800 active:bg-slate-700 rounded-full flex items-center justify-center border border-slate-700 text-xs">◀</button>
+            <button onclick="handleTetrisControl('drop')" class="w-8 h-8 bg-blue-600 active:bg-blue-500 rounded-full flex items-center justify-center border border-blue-500 text-xs text-white">⚡</button>
+            <button onclick="handleTetrisControl('right')" class="w-8 h-8 bg-slate-800 active:bg-slate-700 rounded-full flex items-center justify-center border border-slate-700 text-xs">▶</button>
+            <div></div>
+            <button onclick="handleTetrisControl('down')" class="w-8 h-8 bg-slate-800 active:bg-slate-700 rounded-full flex items-center justify-center border border-slate-700 text-xs">▼</button>
+            <div></div>
+          </div>
+
+          <div class="text-[8px] text-slate-500 text-center select-none mt-0.5" data-i18n="tetrisHint">PC: 矢印キー（上=回転, スペース=落下）</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 4. RETRO SNAKE GAME -->
+    <section id="content-snake" class="tab-content hidden h-full flex flex-col items-center justify-between overflow-hidden min-h-0">
+      <div class="w-full max-w-[260px] flex justify-between items-center flex-shrink-0">
+        <div>
+          <span class="text-[10px] text-slate-400 block" data-i18n="scoreLabel">スコア</span>
+          <span id="score-snake" class="text-base font-bold font-pixel text-yellow-400">0</span>
+        </div>
+        <button onclick="startSnake()" class="bg-slate-800 hover:bg-slate-700 text-[10px] font-bold py-0.5 px-2 rounded text-slate-200" data-i18n="restartBtn">リセット</button>
+      </div>
+
+      <div class="relative bg-slate-950 p-1 rounded-xl border-2 border-slate-800 w-full max-w-[250px] xs:max-w-[280px] aspect-square shadow-inner flex justify-center items-center flex-shrink-0">
+        <canvas id="snake-canvas" width="400" height="400" class="bg-slate-950 rounded block w-full h-full"></canvas>
+        <div id="msg-snake" class="absolute inset-0 bg-slate-950/90 rounded-xl flex flex-col items-center justify-center text-center hidden p-4">
+          <p class="text-base font-bold font-pixel text-red-500 mb-2" data-i18n="gameOver">ゲームオーバー！</p>
+
+          <button onclick="startSnake()" class="bg-green-600 hover:bg-green-500 text-white font-bold py-1 px-4 rounded text-xs" data-i18n="restartBtn">もう一度プレイ</button>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-3 gap-1 w-28 flex-shrink-0 mb-1">
+        <div></div>
+        <button onclick="handleSnakeControl('up')" class="w-8 h-8 bg-slate-800 active:bg-slate-700 rounded flex items-center justify-center font-bold border border-slate-700 text-sm">▲</button>
+        <div></div>
+        <button onclick="handleSnakeControl('left')" class="w-8 h-8 bg-slate-800 active:bg-slate-700 rounded flex items-center justify-center font-bold border border-slate-700 text-sm">◀</button>
+        <div class="w-8 h-8 flex items-center justify-center text-xs text-slate-600">🍎</div>
+        <button onclick="handleSnakeControl('right')" class="w-8 h-8 bg-slate-800 active:bg-slate-700 rounded flex items-center justify-center font-bold border border-slate-700 text-sm">▶</button>
+        <div></div>
+        <button onclick="handleSnakeControl('down')" class="w-8 h-8 bg-slate-800 active:bg-slate-700 rounded flex items-center justify-center font-bold border border-slate-700 text-sm">▼</button>
+        <div></div>
+      </div>
+    </section>
+
+    <!-- 5. CRAFT MEMORY GAME -->
+    <section id="content-memory" class="tab-content hidden h-full flex flex-col items-center justify-start space-y-2 overflow-hidden min-h-0">
+
+      <div class="w-full flex justify-between items-center max-w-sm flex-shrink-0">
+        <div>
+          <span class="text-[10px] text-slate-400 block" data-i18n="movesLabel">めくった回数</span>
+          <span id="moves-memory" class="text-base font-bold font-pixel text-yellow-400">0</span>
+        </div>
+        <div class="flex items-center space-x-2">
+          <div class="flex bg-slate-950 p-0.5 rounded border border-slate-800 text-[10px]">
+            <button id="diff-easy-btn" onclick="setMemoryDifficulty(4)" class="px-2 py-0.5 rounded bg-green-600 text-white">Easy (4x4)</button>
+            <button id="diff-hard-btn" onclick="setMemoryDifficulty(6)" class="px-2 py-0.5 rounded text-slate-400">Hard (6x6)</button>
+          </div>
+          <button onclick="initMemory()" class="bg-slate-800 hover:bg-slate-700 text-[10px] font-bold py-0.5 px-2 rounded text-slate-200" data-i18n="restartBtn">リセット</button>
+        </div>
+      </div>
+
+      <!-- Added min-h-0 overflow-y-auto to guarantee absolute grid compression inside strict containers -->
+      <div id="grid-memory" class="bg-slate-950 p-2 rounded-xl border-2 border-slate-800 w-full max-w-[290px] xs:max-w-[320px] flex-1 grid gap-1 shadow-inner overflow-y-auto no-scrollbar min-h-0">
+        <!-- JS Grid Injections -->
+      </div>
+      <div id="msg-memory" class="hidden text-xs font-bold text-center text-green-400 bg-green-950/40 border border-green-900/60 p-1 rounded max-w-sm w-full flex-shrink-0"></div>
+
+    </section>
+
+    <!-- 6. GLOBAL SYNC FORUM BOARD -->
+    <section id="content-board" class="tab-content hidden h-full flex flex-col justify-between overflow-hidden min-h-0">
+      <div class="bg-slate-900 border border-slate-800 p-2.5 rounded-xl mb-1.5 flex-shrink-0">
+        <h3 class="text-xs font-bold font-pixel text-green-400 flex items-center space-x-2" data-i18n="boardTitle">全員同期掲示板 (Markdown対応)</h3>
+        <p class="text-[10px] text-slate-400 mt-0.5 leading-normal" data-i18n="boardSubtitle">同じ端末内の複数タブやセッション間で自動同期。マークダウン記法によるプレビューレンダリングに対応しています。</p>
+      </div>
+
+      <!-- Messages Stream Flow - Forced Scroll Frame with priority text sizes -->
+      <div id="board-messages" class="flex-1 bg-slate-950 border border-slate-800 rounded-xl p-3 overflow-y-auto space-y-2.5 no-scrollbar text-xs min-h-0">
+        <!-- Dynamic Posts Feed -->
+      </div>
+
+      <!-- User Post Form Area -->
+      <div class="mt-2 bg-slate-900 border border-slate-800 p-2 rounded-xl flex flex-col space-y-1.5 flex-shrink-0">
+        <textarea id="board-input" rows="2" class="w-full bg-slate-950 text-slate-100 p-2 rounded border border-slate-800 text-xs focus:outline-none focus:border-green-500 placeholder-slate-600 no-scrollbar select-text" data-i18n-holder="boardPlaceholder" placeholder="メッセージを入力... (Markdown対応: **太字**, # 見出し, - リスト, `コード`)"></textarea>
+        <div class="flex justify-between items-center">
+          <div class="text-[8px] text-slate-500 font-mono tracking-tight">Markdown: # title | **bold** | - item | `code`</div>
+
+          <button onclick="postBoardMessage()" class="bg-green-600 hover:bg-green-500 active:scale-95 font-bold px-4 py-1 rounded text-xs text-white transition-all flex items-center space-x-1 flex-shrink-0">
+            <span>🚀</span> <span data-i18n="postBtn">投稿する</span>
+          </button>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- APP FOOTER: Compact Fixed Height (28px) -->
+  <footer class="bg-slate-900 border-t border-slate-800 text-center py-1.5 text-[10px] text-slate-500 h-[28px] flex-shrink-0 flex items-center justify-center">
+    <p>&copy; 2026 maimodserver. Full Dynamic-Fit System.</p>
+  </footer>
+
+  <!-- CLIENT DATA & APPLICATION LOGIC ENGINE -->
+  <script>
+    const i18nDict = {
+      ja: {
+        navIntro: "🌐 サーバー紹介",
+
+        nav2048: "🔢 5x5 2048",
+        navTetris: "🧱 テトリス",
+        navSnake: "🐍 スネーク",
+        navMemory: "🧠 神経衰弱",
+        navBoard: "💬 同期掲示板",
+        heroBadge: "次世代バニラ進化論",
+        introTitle: "maimodserver 究極の冒険へ",
+        introSubtitle: "クライアントへのMod導入が一切不要（完全バニラ）でありながら、高度なサーバーサイドコマンドと独自の仕掛けによって、これまでにない未知の体験を引き出す次世代のマインクラフトサーバーです。",
+        serverAddrLabel: "サーバーアドレス",
+        copyBtn: "アドレスをコピー",
+        copied: "コピーしました！",
+        sectionJoin: "サーバーへの接続手順",
+        scoreLabel: "スコア",
+        movesLabel: "めくった回数",
+        themeNumber: "数字",
+        themeAnimal: "どうぶつ",
+        restartBtn: "リセット",
+        gameOver: "ゲームオーバー！",
+        tetrisHint: "PC: 矢印キー（上=回転, スペース=落下）",
+
+        win2048: "おめでとうございます！2048を達成しました！",
+        lose2048: "ゲームオーバー！動かせるマスがありません。",
+        winMemory: "クリア！すべてのペアを見つけました！ 🎉",
+        support2048Hint: "iPad/スマホ: 盤面をスワイプ！ / PC: 矢印キー",
+        boardTitle: "全員同期掲示板 (Markdown対応)",
+        boardSubtitle: "同じ端末内の複数タブやセッション間で自動同期。マークダウン記法によるプレビューレンダリングに対応しています。",
+        boardPlaceholder: "メッセージを入力... (Markdown対応: **太字**, # 見出し, - リスト, `コード`)",
+        postBtn: "投稿する"
+      },
+      en: {
+        navIntro: "🌐 Info",
+        nav2048: "🔢 5x5 2048",
+        navTetris: "🧱 Tetris",
+        navSnake: "🐍 Snake",
+        navMemory: "🧠 Memory",
+        navBoard: "💬 Board",
+        heroBadge: "Next-Gen Vanilla Evolution",
+        introTitle: "Welcome to maimodserver",
+        introSubtitle: "No client mods required! A unique vanilla Minecraft server powered by advanced custom commands and mechanics providing a magical gameplay experience.",
+
+        serverAddrLabel: "SERVER ADDRESS",
+        copyBtn: "Copy Host",
+        copied: "Copied!",
+        sectionJoin: "How to Connect Step-by-Step",
+        scoreLabel: "SCORE",
+        movesLabel: "MOVES",
+        themeNumber: "Numbers",
+        themeAnimal: "Animals",
+        restartBtn: "Reset",
+        gameOver: "Game Over!",
+        tetrisHint: "PC: Arrow keys (Up=Rotate, Space=Drop)",
+        win2048: "Congratulations! You reached 2048!",
+        lose2048: "Game Over! No legal moves left.",
+        winMemory: "Success! You found all card pairs! 🎉",
+        support2048Hint: "iPad/Mobile: Swipe Grid View / PC: Arrows",
+        boardTitle: "Global Sync Forum (Markdown Enabled)",
+        boardSubtitle: "Instant cross-tab transmission sync mockup pipeline. Parse syntax markers freely.",
+        boardPlaceholder: "Enter markdown context text... (e.g. # Header, **bold**, - list, `code`)",
+        postBtn: "Post Msg"
+
+      }
+    };
+
+    let activeLang = 'ja';
+    let currentActiveTab = 'intro';
+
+    window.onload = function() {
+      switchLanguage('ja');
+      switchTab('intro');
+      setup2048TouchGestures();
+      initBoardEngine();
+      
+      // Strict layout guard checking against unwanted bouncing drag events on touch vectors
+      window.addEventListener('keydown', function(e) {
+        if(["Space", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].indexOf(e.code) > -1) {
+          if (currentActiveTab !== 'intro' && currentActiveTab !== 'board') {
+            e.preventDefault();
+          }
         }
 
+      }, false);
+    };
 
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            user-select: none;
-            -webkit-user-select: none;
+    function switchLanguage(langCode) {
+      activeLang = langCode;
+      document.querySelectorAll('[data-i18n]').forEach(element => {
+        const textKey = element.getAttribute('data-i18n');
+        if (i18nDict[langCode][textKey]) element.innerHTML = i18nDict[langCode][textKey];
+      });
+
+      document.querySelectorAll('[data-i18n-holder]').forEach(element => {
+        const placeholderKey = element.getAttribute('data-i18n-holder');
+        if (i18nDict[langCode][placeholderKey]) element.setAttribute('placeholder', i18nDict[langCode][placeholderKey]);
+      });
+
+      if(langCode === 'ja') {
+        document.getElementById('btn-ja').className = "px-2.5 py-0.5 text-xs font-bold rounded transition-all bg-green-600 text-white";
+        document.getElementById('btn-en').className = "px-2.5 py-0.5 text-xs font-bold rounded transition-all text-slate-400 hover:text-white";
+      } else {
+
+        document.getElementById('btn-en').className = "px-2.5 py-0.5 text-xs font-bold rounded transition-all bg-green-600 text-white";
+        document.getElementById('btn-ja').className = "px-2.5 py-0.5 text-xs font-bold rounded transition-all text-slate-400 hover:text-white";
+      }
+
+      if (currentActiveTab === 'game2048') render2048Board();
+      if (currentActiveTab === 'board') renderBoardContent();
+    }
+
+    function copyServerAddress() {
+      const serverStringStr = "katherine-tomtom.tun.ply.gg";
+      const dummyTextAreaNode = document.createElement("textarea");
+      dummyTextAreaNode.value = serverStringStr;
+      document.body.appendChild(dummyTextAreaNode);
+      dummyTextAreaNode.select();
+      document.execCommand("copy");
+      document.body.removeChild(dummyTextAreaNode);
+
+      const copyBtnTxt = document.getElementById('copy-btn-text');
+      copyBtnTxt.innerText = i18nDict[activeLang]['copied'];
+
+      setTimeout(() => { copyBtnTxt.innerText = i18nDict[activeLang]['copyBtn']; }, 1800);
+    }
+
+    function switchTab(targetTabId) {
+      currentActiveTab = targetTabId;
+      stopTetrisLoop();
+      stopSnakeLoop();
+
+      document.querySelectorAll('.tab-content').forEach(section => {
+        section.classList.add('hidden');
+        section.classList.remove('flex', 'block');
+      });
+
+      const activeSection = document.getElementById(`content-${targetTabId}`);
+      activeSection.classList.remove('hidden');
+      if (targetTabId === 'intro') activeSection.classList.add('block');
+      else activeSection.classList.add('flex');
+
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+
+        btn.classList.remove('border-green-500', 'text-green-400', 'bg-slate-950');
+        btn.classList.add('border-transparent', 'text-slate-400');
+      });
+
+      const activeNavTabElement = document.getElementById(`tab-${targetTabId}`);
+      activeNavTabElement.classList.remove('border-transparent', 'text-slate-400');
+      activeNavTabElement.classList.add('border-green-500', 'text-green-400', 'bg-slate-950');
+
+      if(targetTabId === 'game2048') init2048();
+      if(targetTabId === 'tetris') startTetris();
+      if(targetTabId === 'snake') startSnake();
+      if(targetTabId === 'memory') initMemory();
+      if(targetTabId === 'board') renderBoardContent();
+    }
+
+
+    // ==========================================
+    // MODULE 1: 5x5 2048 PUZZLE ENGINE
+    // ==========================================
+
+    let board2048 = [];
+    let score248Val = 0;
+    let theme2048Mode = 'number';
+
+    const animalMap = {
+      2: "🐣", 4: "🐥", 8: "🐓", 16: "🦉", 32: "🦆", 64: "🐧",
+      128: "🐇", 256: "🦊", 512: "🐺", 1024: "🦁", 2048: "🐉", 4096: "🦄"
+    };
+
+    const tileBgColors = {
+      0: "bg-slate-900/60",
+      2: "bg-amber-100 text-slate-900",
+      4: "bg-amber-200 text-slate-900",
+      8: "bg-orange-300 text-slate-900",
+      16: "bg-orange-400 text-white",
+      32: "bg-red-400 text-white",
+      64: "bg-red-500 text-white",
+      128: "bg-yellow-300 text-slate-950 shadow-md",
+      256: "bg-yellow-400 text-slate-950 shadow-md",
+
+      512: "bg-green-400 text-slate-950 shadow-md",
+      1024: "bg-purple-500 text-white shadow-lg",
+      2048: "bg-indigo-600 text-white shadow-xl animate-pulse"
+    };
+
+    function set2048Theme(themeType) {
+      theme2048Mode = themeType;
+      document.getElementById('theme-num-btn').className = themeType === 'number' ? "px-2 py-0.5 rounded bg-blue-600 text-white" : "px-2 py-0.5 rounded text-slate-400";
+      document.getElementById('theme-ani-btn').className = themeType === 'animal' ? "px-2 py-0.5 rounded bg-blue-600 text-white" : "px-2 py-0.5 rounded text-slate-400";
+      render2048Board();
+    }
+
+    function init2048() {
+      board2048 = Array(25).fill(0);
+      score248Val = 0;
+      document.getElementById('score-2048').innerText = score248Val;
+      document.getElementById('msg-2048').classList.add('hidden');
+      spawn2048Tile(); spawn2048Tile();
+      render2048Board();
+
+    }
+
+    function spawn2048Tile() {
+      let emptyCells = [];
+      board2048.forEach((val, idx) => { if(val === 0) emptyCells.push(idx); });
+      if(emptyCells.length > 0) {
+        let randIdx = emptyCells[Math.floor(Math.random() * emptyCells.length)];
+        board2048[randIdx] = Math.random() < 0.9 ? 2 : 4;
+      }
+    }
+
+    function render2048Board() {
+      const container = document.getElementById('grid-2048');
+      container.innerHTML = '';
+      board2048.forEach(value => {
+        const cell = document.createElement('div');
+        cell.className = `flex flex-col items-center justify-center font-pixel rounded text-xs sm:text-sm font-bold aspect-square select-none ${tileBgColors[value] || 'bg-purple-700 text-white'}`;
+        if(value > 0) {
+          cell.innerText = theme2048Mode === 'animal' ? (animalMap[value] || "👾") : value;
+
+        } else {
+          cell.innerText = '';
         }
+        container.appendChild(cell);
+      });
+    }
 
-        body {
-            font-family: 'Poppins', 'Helvetica Neue', Arial, sans-serif;
-            background: linear-gradient(135deg, #ffe5ec 0%, #cdb4db 100%);
-            color: var(--text-dark);
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding: min(20px, 3vw);
-            overflow-x: hidden;
+    let t2048StartX = 0; let t2048StartY = 0;
+    function setup2048TouchGestures() {
+      const targetArea = document.getElementById('grid-2048');
+      targetArea.addEventListener('touchstart', function(e) {
+        t2048StartX = e.changedTouches[0].screenX; t2048StartY = e.changedTouches[0].screenY;
+      }, { passive: true });
+      targetArea.addEventListener('touchend', function(e) {
+        let dx = e.changedTouches[0].screenX - t2048StartX;
+        let dy = e.changedTouches[0].screenY - t2048StartY;
+        let absDx = Math.abs(dx); let absDy = Math.abs(dy);
+        if (Math.max(absDx, absDy) > 25) {
+          if (absDx > absDy) { if (dx > 0) move2048('right'); else move2048('left'); }
+
+          else { if (dy > 0) move2048('down'); else move2048('up'); }
+        }
+      }, { passive: true });
+    }
+
+    function move2048(direction) {
+      let treats = false;
+      if (direction === 'left') {
+        let res = slide2048Left(board2048); board2048 = res.board; treats = res.moved;
+      } else if (direction === 'right') {
+        let flipped = reverse5x5(board2048); let res = slide2048Left(flipped); board2048 = reverse5x5(res.board); treats = res.moved;
+      } else if (direction === 'up') {
+        let transposed = transpose5x5(board2048); let res = slide2048Left(transposed); board2048 = transpose5x5(res.board); treats = res.moved;
+      } else if (direction === 'down') {
+        let transposed = transpose5x5(board2048); let flipped = reverse5x5(transposed); let res = slide2048Left(flipped);
+        let unflipped = reverse5x5(res.board); board2048 = transpose5x5(unflipped); treats = res.moved;
+      }
+      if(treats) {
+        spawn2048Tile(); render2048Board();
+
+        document.getElementById('score-2048').innerText = score248Val;
+        check2048GameOver();
+      }
+    }
+
+    function slide2048Left(inputBoard) {
+      let freshBoard = []; let moved = false;
+      for(let i=0; i<5; i++) {
+        let row = inputBoard.slice(i*5, i*5 + 5);
+        let filteredRow = row.filter(v => v !== 0);
+        let combinedRow = [];
+        for(let j=0; j<filteredRow.length; j++) {
+          if(filteredRow[j] === filteredRow[j+1] && j < filteredRow.length - 1) {
+            let combinedVal = filteredRow[j] * 2; combinedRow.push(combinedVal);
+            score248Val += combinedVal; j++; moved = true;
+          } else { combinedRow.push(filteredRow[j]); }
+        }
+        while(combinedRow.length < 5) combinedRow.push(0);
+        for(let k=0; k<5; k++) { if(row[k] !== combinedRow[k]) moved = true; }
+
+        freshBoard = freshBoard.concat(combinedRow);
+      }
+      return { board: freshBoard, moved: moved };
+    }
+
+    function transpose5x5(b) {
+      let out = Array(25).fill(0);
+      for(let r=0; r<5; r++) { for(let c=0; c<5; c++) out[c*5 + r] = b[r*5 + c]; }
+      return out;
+    }
+
+    function reverse5x5(b) {
+      let out = [];
+      for(let i=0; i<5; i++) out = out.concat(b.slice(i*5, i*5 + 5).reverse());
+      return out;
+    }
+
+    function check2048GameOver() {
+      if(board2048.includes(2048)) {
+
+        const msg = document.getElementById('msg-2048');
+        msg.innerText = i18nDict[activeLang]['win2048'];
+        msg.classList.remove('hidden', 'text-red-400'); msg.classList.add('text-green-400'); return;
+      }
+      if(!board2048.includes(0)) {
+        let movesLeft = false;
+        for(let r=0; r<5; r++) {
+          for(let c=0; c<5; c++) {
+            let current = board2048[r*5 + c];
+            if(c < 4 && current === board2048[r*5 + c + 1]) movesLeft = true;
+            if(r < 4 && current === board2048[(r+1)*5 + c]) movesLeft = true;
+          }
+        }
+        if(!movesLeft) {
+          const msg = document.getElementById('msg-2048');
+          msg.innerText = i18nDict[activeLang]['lose2048'];
+          msg.classList.remove('hidden', 'text-green-400'); msg.classList.add('text-red-400');
+        }
+      }
+
+    }
+
+
+    // ==========================================
+    // MODULE 2: TETRIS MOBILE MOTOR ENGINE
+    // ==========================================
+    const tetrisCanvas = document.getElementById('tetris-canvas');
+    const tetrisCtx = tetrisCanvas.getContext('2d');
+    let tetrisScore = 0; let tetrisGrid = []; let currentPiece = null; let tetrisTimer = null;
+    const blockScaleSize = 24;
+
+    const tetrisBlocksDict = {
+      'I': [[1,1,1,1]], 'O': [[2,2],[2,2]], 'T': [[0,3,0],[3,3,3]], 'S': [[0,4,4],[4,4,0]],
+      'Z': [[5,5,0],[0,5,5]], 'J': [[6,0,0],[6,6,6]], 'L': [[0,0,7],[7,7,7]]
+    };
+    const blockColorsDict = ['#0f172a', '#22d3ee', '#facc15', '#a855f7', '#22c55e', '#ef4444', '#3b82f6', '#f97316'];
+
+    function createTetrisGrid() {
+      let grid = []; for(let r=0; r<20; r++) grid.push(Array(10).fill(0)); return grid;
+
+    }
+    function generateRandomPiece() {
+      const pieceKeys = ['I','O','T','S','Z','J','L'];
+      const pickKey = pieceKeys[Math.floor(Math.random() * pieceKeys.length)];
+      const matrix = tetrisBlocksDict[pickKey];
+      return { matrix: matrix, x: Math.floor((10 - matrix[0].length) / 2), y: 0 };
+    }
+    function startTetris() {
+      stopTetrisLoop(); tetrisGrid = createTetrisGrid(); tetrisScore = 0;
+      document.getElementById('score-tetris').innerText = tetrisScore;
+      document.getElementById('msg-tetris').classList.add('hidden');
+      currentPiece = generateRandomPiece(); drawTetrisScreen();
+      tetrisTimer = setInterval(updateTetrisTick, 1000);
+    }
+    function stopTetrisLoop() { if(tetrisTimer) { clearInterval(tetrisTimer); tetrisTimer = null; } }
+
+    function updateTetrisTick() {
+      currentPiece.y++;
+      if(detectTetrisCollision()) {
+
+        currentPiece.y--; lockTetrisPiece(); clearTetrisRows(); currentPiece = generateRandomPiece();
+        if(detectTetrisCollision()) { document.getElementById('msg-tetris').classList.remove('hidden'); stopTetrisLoop(); }
+      }
+      drawTetrisScreen();
+    }
+
+    function detectTetrisCollision() {
+      const m = currentPiece.matrix;
+      for(let r=0; r<m.length; r++) {
+        for(let c=0; c<m[r].length; c++) {
+          if(m[r][c] !== 0) {
+            let nextX = currentPiece.x + c; let nextY = currentPiece.y + r;
+            if(nextX < 0 || nextX >= 10 || nextY >= 20) return true;
+            if(nextY >= 0 && tetrisGrid[nextY][nextX] !== 0) return true;
+          }
+        }
+      }
+      return false;
+    }
+
+
+    function lockTetrisPiece() {
+      const m = currentPiece.matrix;
+      for(let r=0; r<m.length; r++) {
+        for(let c=0; c<m[r].length; c++) {
+          if(m[r][c] !== 0 && currentPiece.y + r >= 0) tetrisGrid[currentPiece.y + r][currentPiece.x + c] = m[r][c];
+        }
+      }
+    }
+
+    function clearTetrisRows() {
+      let linesCount = 0;
+      for(let r = tetrisGrid.length - 1; r >= 0; r--) {
+        if(!tetrisGrid[r].includes(0)) { tetrisGrid.splice(r, 1); tetrisGrid.unshift(Array(10).fill(0)); linesCount++; r++; }
+      }
+      if(linesCount > 0) {
+        tetrisScore += [0, 100, 300, 500, 800][linesCount] || 1000;
+        document.getElementById('score-tetris').innerText = tetrisScore;
+      }
+    }
+
+
+    function drawTetrisScreen() {
+      tetrisCtx.fillStyle = '#020617'; tetrisCtx.fillRect(0, 0, tetrisCanvas.width, tetrisCanvas.height);
+      for(let r=0; r<20; r++) {
+        for(let c=0; c<10; c++) { if(tetrisGrid[r][c] !== 0) drawTetrisBlock(c, r, blockColorsDict[tetrisGrid[r][c]]); }
+      }
+      if(currentPiece) {
+        const m = currentPiece.matrix;
+        for(let r=0; r<m.length; r++) {
+          for(let c=0; c<m[r].length; c++) { if(m[r][c] !== 0) drawTetrisBlock(currentPiece.x + c, currentPiece.y + r, blockColorsDict[m[r][c]]); }
+        }
+      }
+    }
+
+    function drawTetrisBlock(x, y, colorHex) {
+      tetrisCtx.fillStyle = colorHex; tetrisCtx.fillRect(x*blockScaleSize, y*blockScaleSize, blockScaleSize-1, blockScaleSize-1);
+    }
+
+    function handleTetrisControl(action) {
+      if(!currentPiece || !tetrisTimer) return;
+
+      if(action === 'left') { currentPiece.x--; if(detectTetrisCollision()) currentPiece.x++; }
+      else if(action === 'right') { currentPiece.x++; if(detectTetrisCollision()) currentPiece.x--; }
+      else if(action === 'down') { currentPiece.y++; if(detectTetrisCollision()) currentPiece.y--; }
+      else if(action === 'rotate') {
+        const prevMatrix = currentPiece.matrix;
+        let nMatrix = Array(prevMatrix[0].length).fill(0).map(() => Array(prevMatrix.length).fill(0));
+        for(let r=0; r<prevMatrix.length; r++) {
+          for(let c=0; c<prevMatrix[r].length; c++) nMatrix[c][prevMatrix.length - 1 - r] = prevMatrix[r][c];
+        }
+        currentPiece.matrix = nMatrix; if(detectTetrisCollision()) currentPiece.matrix = prevMatrix;
+      } else if(action === 'drop') {
+        while(!detectTetrisCollision()) { currentPiece.y++; }
+        currentPiece.y--; lockTetrisPiece(); clearTetrisRows(); currentPiece = generateRandomPiece();
+        if(detectTetrisCollision()) { document.getElementById('msg-tetris').classList.remove('hidden'); stopTetrisLoop(); }
+      }
+      drawTetrisScreen();
+    }
+
+
+
+    // ==========================================
+    // MODULE 3: RETRO SNAKE CORE SIMULATION
+    // ==========================================
+    const snakeCanvas = document.getElementById('snake-canvas');
+    const snakeCtx = snakeCanvas.getContext('2d');
+    let snakeScore = 0; let snakeArr = []; let snakeDir = { x: 1, y: 0 }; let bufferedDir = { x: 1, y: 0 }; let snakeFoodPos = { x: 0, y: 0 }; let snakeTimer = null;
+    const gridMapUnits = 20;
+
+    function startSnake() {
+      stopSnakeLoop(); snakeScore = 0;
+      document.getElementById('score-snake').innerText = snakeScore;
+      document.getElementById('msg-snake').classList.add('hidden');
+      snakeArr = [{ x: 10, y: 10 }, { x: 9, y: 10 }, { x: 8, y: 10 }];
+      snakeDir = { x: 1, y: 0 }; bufferedDir = { x: 1, y: 0 };
+      spawnSnakeFood(); drawSnakeFrame(); snakeTimer = setInterval(updateSnakeTick, 130);
+    }
+    function stopSnakeLoop() { if(snakeTimer) { clearInterval(snakeTimer); snakeTimer = null; } }
+
+    function spawnSnakeFood() {
+
+      let clean = false;
+      while(!clean) {
+        snakeFoodPos = { x: Math.floor(Math.random() * gridMapUnits), y: Math.floor(Math.random() * gridMapUnits) };
+        clean = true; for(let seg of snakeArr) { if(seg.x === snakeFoodPos.x && seg.y === snakeFoodPos.y) clean = false; }
+      }
+    }
+
+    function updateSnakeTick() {
+      snakeDir = bufferedDir;
+      const head = { x: snakeArr[0].x + snakeDir.x, y: snakeArr[0].y + snakeDir.y };
+      if(head.x < 0 || head.x >= gridMapUnits || head.y < 0 || head.y >= gridMapUnits) { triggerSnakeGameOver(); return; }
+      for(let seg of snakeArr) { if(seg.x === head.x && seg.y === head.y) { triggerSnakeGameOver(); return; } }
+
+      snakeArr.unshift(head);
+      if(head.x === snakeFoodPos.x && head.y === snakeFoodPos.y) {
+        snakeScore += 10; document.getElementById('score-snake').innerText = snakeScore; spawnSnakeFood();
+      } else { snakeArr.pop(); }
+      drawSnakeFrame();
+    }
+
+    function triggerSnakeGameOver() { document.getElementById('msg-snake').classList.remove('hidden'); stopSnakeLoop(); }
+
+    function drawSnakeFrame() {
+      const uSize = snakeCanvas.width / gridMapUnits;
+      snakeCtx.fillStyle = '#020617'; snakeCtx.fillRect(0, 0, snakeCanvas.width, snakeCanvas.height);
+      snakeCtx.fillStyle = '#ef4444'; snakeCtx.beginPath();
+      let cx = snakeFoodPos.x * uSize + uSize/2; let cy = snakeFoodPos.y * uSize + uSize/2;
+      snakeCtx.arc(cx, cy, uSize/2.3, 0, 2*Math.PI); snakeCtx.fill();
+
+      snakeArr.forEach((segment, index) => {
+        snakeCtx.fillStyle = index === 0 ? '#4ade80' : '#22c55e';
+        snakeCtx.fillRect(segment.x * uSize + 1, segment.y * uSize + 1, uSize - 2, uSize - 2);
+      });
+    }
+    function handleSnakeControl(dirCmd) {
+      if(dirCmd === 'up' && snakeDir.y === 0) bufferedDir = { x: 0, y: -1 };
+      if(dirCmd === 'down' && snakeDir.y === 0) bufferedDir = { x: 0, y: 1 };
+      if(dirCmd === 'left' && snakeDir.x === 0) bufferedDir = { x: -1, y: 0 };
+      if(dirCmd === 'right' && snakeDir.x === 0) bufferedDir = { x: 1, y: 0 };
+
+    }
+
+
+    // ==========================================
+    // MODULE 4: CRAFT MEMORY PUZZLE MATRIX
+    // ==========================================
+    let memoryDeck = []; let memoryMovesCount = 0; let selectedMemoryCards = []; let lockMemoryGrid = false; let memoryDimensionSize = 4;
+    const craftEmojisPool = ["⛏️", "📦", "⚔️", "🍖", "💎", "🧱", "🌲", "🍎", "🏹", "🌋", "🧟", "💀", "🐷", "🐮", "🐑", "🐔", "🧭", "🎣"];
+
+    function setMemoryDifficulty(dim) {
+      memoryDimensionSize = dim;
+      document.getElementById('diff-easy-btn').className = dim === 4 ? "px-2 py-0.5 rounded bg-green-600 text-white" : "px-2 py-0.5 rounded text-slate-400";
+      document.getElementById('diff-hard-btn').className = dim === 6 ? "px-2 py-0.5 rounded bg-green-600 text-white" : "px-2 py-0.5 rounded text-slate-400";
+      initMemory();
+    }
+    function initMemory() {
+      memoryMovesCount = 0; selectedMemoryCards = []; lockMemoryGrid = false;
+      document.getElementById('moves-memory').innerText = memoryMovesCount;
+      document.getElementById('msg-memory').classList.add('hidden');
+
+      const totalItemsCount = (memoryDimensionSize * memoryDimensionSize) / 2;
+      const slicedEmojisList = craftEmojisPool.slice(0, totalItemsCount);
+      let pairedDeck = [...slicedEmojisList, ...slicedEmojisList];
+      for (let i = pairedDeck.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1)); [pairedDeck[i], pairedDeck[j]] = [pairedDeck[j], pairedDeck[i]];
+      }
+      memoryDeck = pairedDeck.map((val, idx) => ({ id: idx, symbol: val, flipped: false, solved: false }));
+      buildMemoryGridUI();
+    }
+    function buildMemoryGridUI() {
+      const container = document.getElementById('grid-memory'); container.innerHTML = '';
+      container.style.gridTemplateColumns = `repeat(${memoryDimensionSize}, minmax(0, 1fr))`;
+      memoryDeck.forEach(card => {
+        const cardNode = document.createElement('div'); cardNode.dataset.id = card.id; cardNode.onclick = () => triggerMemoryFlip(card.id);
+        cardNode.className = "aspect-square flex items-center justify-center text-lg sm:text-xl rounded-lg border border-slate-800 cursor-pointer bg-emerald-800 text-transparent select-none";
+        cardNode.innerText = "🟩"; container.appendChild(cardNode);
+      });
+    }
+    function triggerMemoryFlip(cardId) {
+
+      if(lockMemoryGrid) return; const card = memoryDeck[cardId]; if(card.flipped || card.solved) return;
+      const cardElement = document.querySelector(`#grid-memory div[data-id='${cardId}']`);
+      card.flipped = true; cardElement.innerText = card.symbol;
+      cardElement.className = "aspect-square flex items-center justify-center text-lg sm:text-xl rounded-lg border border-slate-700 bg-slate-800 text-slate-100 scale-95 select-none";
+      selectedMemoryCards.push(card);
+      if(selectedMemoryCards.length === 2) {
+        memoryMovesCount++; document.getElementById('moves-memory').innerText = memoryMovesCount;
+        lockMemoryGrid = true; checkMemoryMatch();
+      }
+    }
+    function checkMemoryMatch() {
+      const [c1, c2] = selectedMemoryCards;
+      if(c1.symbol === c2.symbol) {
+        c1.solved = true; c2.solved = true;
+        document.querySelector(`#grid-memory div[data-id='${c1.id}']`).classList.add('border-green-500/30');
+        document.querySelector(`#grid-memory div[data-id='${c2.id}']`).classList.add('border-green-500/30');
+        selectedMemoryCards = []; lockMemoryGrid = false; evaluateMemoryVictory();
+      } else {
+        setTimeout(() => {
+
+          const el1 = document.querySelector(`#grid-memory div[data-id='${c1.id}']`);
+          const el2 = document.querySelector(`#grid-memory div[data-id='${c2.id}']`);
+          c1.flipped = false; c2.flipped = false;
+          el1.innerText = "🟩"; el1.className = "aspect-square flex items-center justify-center text-lg sm:text-xl rounded-lg border border-slate-800 cursor-pointer bg-emerald-800 text-transparent select-none";
+          el2.innerText = "🟩"; el2.className = "aspect-square flex items-center justify-center text-lg sm:text-xl rounded-lg border border-slate-800 cursor-pointer bg-emerald-800 text-transparent select-none";
+          selectedMemoryCards = []; lockMemoryGrid = false;
+        }, 700);
+      }
+    }
+    function evaluateMemoryVictory() {
+      if(memoryDeck.every(c => c.solved)) {
+        const m = document.getElementById('msg-memory'); m.innerText = i18nDict[activeLang]['winMemory']; m.classList.remove('hidden');
+      }
+    }
+
+
+    // ==========================================
+    // MODULE 5: SAFE VANILLA MARKDOWN SYNC FORUM
+    // ==========================================
+
+    let boardMessages = [];
+
+    function initBoardEngine() {
+      const savedStorageData = localStorage.getItem('maimod_synced_forum_v1');
+      if (savedStorageData) {
+        boardMessages = JSON.parse(savedStorageData);
+      } else {
+        boardMessages = [
+          { id: 101, user: "⚙️ System Staff", text: "# maimodserver 公式告知\nMod導入不要のバニラ型魔法サーバーへようこそ！\n- 接続アドレス: `katherine-tomtom.tun.ply.gg`\n- ルールを守って楽しくビルドしましょう！", time: "2026/10/19 12:00:00" },
+          { id: 102, user: "⛏️ MinePlayer", text: "掲示板の**マークダウンパース機能**めっちゃ綺麗。別タブで開くとリアルタイムに同期されますね！", time: "2026/10/19 14:22:15" }
+        ];
+        localStorage.setItem('maimod_synced_forum_v1', JSON.stringify(boardMessages));
+      }
+
+      // Live cross-tab pipeline automatic synchronization via event hub
+      window.addEventListener('storage', function(event) {
+        if (event.key === 'maimod_synced_forum_v1' && event.newValue) {
+          boardMessages = JSON.parse(event.newValue);
+          if (currentActiveTab === 'board') renderBoardContent();
 
         }
+      });
+    }
 
-        /* Global Language Switcher */
-        .global-lang-container {
-            display: flex;
-            justify-content: center;
-            gap: 8px;
-            margin-bottom: 12px;
-            width: 100%;
-            max-width: 480px;
-        }
+    function renderBoardContent() {
+      const container = document.getElementById('board-messages');
+      container.innerHTML = '';
 
-        .lang-btn {
-            background: rgba(255, 255, 255, 0.6);
-            border: none;
-            padding: 6px 16px;
-            border-radius: 20px;
-            font-size: 13px;
-            font-weight: 700;
+      boardMessages.forEach(msg => {
+        const itemNode = document.createElement('div');
+        itemNode.className = "bg-slate-900 border border-slate-800 p-2.5 rounded-lg space-y-1 shadow-sm";
+        
+        const metaBar = document.createElement('div');
+        metaBar.className = "flex justify-between items-center text-[10px] text-slate-500 font-mono border-b border-slate-800/60 pb-1 select-none";
+        metaBar.innerHTML = `<span class="font-bold text-green-400 font-pixel">${escapeHTML(msg.user)}</span><span>${msg.time}</span>`;
+        
+        const contentBox = document.createElement('div');
+        contentBox.className = "text-slate-200 leading-relaxed text-xs break-words pt-0.5 space-y-1";
+        contentBox.innerHTML = customMarkdownParser(msg.text);
 
-            color: var(--text-dark);
-            cursor: pointer;
-            transition: all 0.2s;
-            backdrop-filter: blur(5px);
-            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-        }
 
-        .lang-btn.active {
-            background: #2f3542;
-            color: white;
-        }
+        itemNode.appendChild(metaBar);
+        itemNode.appendChild(contentBox);
+        container.appendChild(itemNode);
+      });
 
-        /* Navigation Tabs */
-        .nav-container {
-            display: flex;
-            width: 100%;
-            max-width: 480px;
-            background: rgba(255, 255, 255, 0.6);
-            padding: 6px;
+      container.scrollTop = container.scrollHeight;
+    }
 
-            border-radius: 16px;
-            margin-bottom: 16px;
-            backdrop-filter: blur(10px);
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
-        }
+    function postBoardMessage() {
+      const inputRef = document.getElementById('board-input');
+      const textContext = inputRef.value.trim();
+      if (!textContext) return;
 
-        .tab-btn {
-            flex: 1;
-            padding: 10px;
-            border: none;
-            background: transparent;
-            font-family: 'Poppins', sans-serif;
-            font-weight: 700;
-            font-size: 14px;
-            color: var(--text-dark);
-            cursor: pointer;
-            border-radius: 12px;
-            transition: all 0.3s ease;
-            display: flex;
+      const newPayload = {
+        id: Date.now() + Math.random(),
+        user: activeLang === 'ja' ? "匿名プレイヤー" : "Anonymous Miner",
+        text: textContext,
+        time: new Date().toLocaleString()
+      };
 
-            align-items: center;
-            justify-content: center;
-            gap: 6px;
-        }
 
-        .tab-btn.active {
-            background: white;
-            color: var(--primary-color);
-            box-shadow: 0 4px 10px rgba(0,0,0,0.08);
-        }
+      boardMessages.push(newPayload);
+      localStorage.setItem('maimod_synced_forum_v1', JSON.stringify(boardMessages));
+      inputRef.value = '';
+      renderBoardContent();
+    }
 
-        /* Views Container */
-        .content-view {
-            display: none;
-            width: 100%;
-            max-width: 480px;
-        }
+    // Regexp Parser Pipeline
+    function customMarkdownParser(rawString) {
+      let html = escapeHTML(rawString);
 
-        .content-view.active {
+      // 1. Headers matching pipeline (# Context)
+      html = html.replace(/^#\s+(.+)$/gm, '<h4 class="text-sm font-bold text-yellow-400 mt-1 font-pixel">$1</h4>');
+      
+      // 2. Bold text matching pipeline (**text**)
+      html = html.replace(/\*\*(.*?)\*\*/g, '<strong class="text-green-400 font-bold">$1</strong>');
+      
+      // 3. Inline monospace codes markers (`code`)
+      html = html.replace(/`(.*?)`/g, '<code class="bg-slate-950 px-1 py-0.5 rounded text-pink-400 font-mono text-[10px]">$1</code>');
+      
 
-            display: block;
-        }
+      // 4. Bullet lists elements (- list)
+      html = html.replace(/^-\s+(.+)$/gm, '<div class="flex items-center space-x-1.5 pl-1"><span class="text-green-500 text-[10px]">■</span><span>$1</span></div>');
 
-        /* Server Info View Custom Styles */
-        .server-container {
-            background: rgba(255, 255, 255, 0.9);
-            padding: min(28px, 5vw);
-            border-radius: 24px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-            backdrop-filter: blur(10px);
-            width: 100%;
-        }
+      // 5. Normal linebreaks parsing
+      return html.replace(/\n/g, '<br>');
+    }
 
-        .server-header {
-            text-align: center;
-            margin-bottom: 24px;
-        }
+    function escapeHTML(str) {
+      return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    }
 
-        .server-badge {
 
-            background: #ff4757;
-            color: white;
-            padding: 4px 10px;
-            border-radius: 20px;
-            font-size: 11px;
-            font-weight: 700;
-            display: inline-block;
-            margin-bottom: 8px;
-            letter-spacing: 1px;
-        }
+    // --- GLOBAL HARDWARE KEYBOARD EVENT INTERFACING BRIDGE ---
+    window.addEventListener('keydown', function(event) {
+      if(currentActiveTab === 'game2048') {
+        if(event.key === 'ArrowUp') move2048('up'); if(event.key === 'ArrowDown') move2048('down');
+        if(event.key === 'ArrowLeft') move2048('left'); if(event.key === 'ArrowRight') move2048('right');
+      }
+      if(currentActiveTab === 'tetris') {
 
-        .server-title {
-            font-size: min(32px, 7vw);
-            font-weight: 800;
-            color: #2f3542;
-            margin-bottom: 4px;
-        }
+        if(event.key === 'ArrowLeft') handleTetrisControl('left'); if(event.key === 'ArrowRight') handleTetrisControl('right');
+        if(event.key === 'ArrowDown') handleTetrisControl('down'); if(event.key === 'ArrowUp') handleTetrisControl('rotate');
+        if(event.key === ' ') handleTetrisControl('drop');
+      }
+      if(currentActiveTab === 'snake') {
+        if(event.key === 'ArrowUp') handleSnakeControl('up'); if(event.key === 'ArrowDown') handleSnakeControl('down');
+        if(event.key === 'ArrowLeft') handleSnakeControl('left'); if(event.key === 'ArrowRight') handleSnakeControl('right');
+      }
+    });
 
-        .server-subtitle {
+  </script>
+</body>
+</html>
 
-            font-size: 14px;
-            color: #747d8c;
-            font-weight: 600;
-        }
 
-        .server-card {
-            background: white;
-            padding: 18px;
-            border-radius: 16px;
-            margin-bottom: 16px;
-            border: 1px solid #f1f2f6;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.02);
-        }
-
-        .card-title {
-            font-size: 16px;
-            font-weight: 700;
-            color: #2f3542;
-            margin-bottom: 10px;
-
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .card-text {
-            font-size: 14px;
-            color: #57606f;
-            line-height: 1.6;
-        }
-
-        .feature-item {
-            display: flex;
-            align-items: flex-start;
-            gap: 12px;
-            margin-bottom: 12px;
-        }
-
-        .feature-icon {
-
-            font-size: 20px;
-            line-height: 1;
-            padding-top: 2px;
-        }
-
-        .feature-content h4 {
-            font-size: 14px;
-            font-weight: 700;
-            color: #2f3542;
-            margin-bottom: 2px;
-        }
-
-        .feature-content p {
-            font-size: 13px;
-            color: #747d8c;
-        }
-
-        .ip-box {
-            background: #f1f2f6;
-
-            padding: 12px;
-            border-radius: 12px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-top: 8px;
-            border: 2px dashed #ced6e0;
-        }
-
-        .ip-code {
-            font-family: monospace;
-            font-size: 13px;
-            font-weight: 700;
-            color: #ff4757;
-            word-break: break-all;
-        }
-
-        .copy-hint {
-            font-size: 11px;
-
-            color: #a4b0be;
-            font-weight: 600;
