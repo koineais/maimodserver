@@ -1,0 +1,1096 @@
+# maimodserver紹介 ＆ 10x10多言語2048
+
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>maimodserver & ポップ＆ファン 10x10 2048</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #f6f8fa;
+            --container-bg: #bbada0;
+            --grid-bg: #eee4da;
+            --text-dark: #776e65;
+            --text-light: #f9f6f2;
+            --primary-color: #ff6b6b;
+            --secondary-color: #4ecdc4;
+            --server-primary: #7289da;
+        }
+
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        body {
+            font-family: 'Poppins', 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #ffe5ec 0%, #cdb4db 100%);
+            color: var(--text-dark);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: min(20px, 3vw);
+            overflow-x: hidden;
+
+        }
+
+        /* Global Language Switcher */
+        .global-lang-container {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            margin-bottom: 12px;
+            width: 100%;
+            max-width: 480px;
+        }
+
+        .lang-btn {
+            background: rgba(255, 255, 255, 0.6);
+            border: none;
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 700;
+
+            color: var(--text-dark);
+            cursor: pointer;
+            transition: all 0.2s;
+            backdrop-filter: blur(5px);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+
+        .lang-btn.active {
+            background: #2f3542;
+            color: white;
+        }
+
+        /* Navigation Tabs */
+        .nav-container {
+            display: flex;
+            width: 100%;
+            max-width: 480px;
+            background: rgba(255, 255, 255, 0.6);
+            padding: 6px;
+
+            border-radius: 16px;
+            margin-bottom: 16px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+        }
+
+        .tab-btn {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            background: transparent;
+            font-family: 'Poppins', sans-serif;
+            font-weight: 700;
+            font-size: 14px;
+            color: var(--text-dark);
+            cursor: pointer;
+            border-radius: 12px;
+            transition: all 0.3s ease;
+            display: flex;
+
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .tab-btn.active {
+            background: white;
+            color: var(--primary-color);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+        }
+
+        /* Views Container */
+        .content-view {
+            display: none;
+            width: 100%;
+            max-width: 480px;
+        }
+
+        .content-view.active {
+
+            display: block;
+        }
+
+        /* Server Info View Custom Styles */
+        .server-container {
+            background: rgba(255, 255, 255, 0.9);
+            padding: min(28px, 5vw);
+            border-radius: 24px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+            width: 100%;
+        }
+
+        .server-header {
+            text-align: center;
+            margin-bottom: 24px;
+        }
+
+        .server-badge {
+
+            background: #ff4757;
+            color: white;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 700;
+            display: inline-block;
+            margin-bottom: 8px;
+            letter-spacing: 1px;
+        }
+
+        .server-title {
+            font-size: min(32px, 7vw);
+            font-weight: 800;
+            color: #2f3542;
+            margin-bottom: 4px;
+        }
+
+        .server-subtitle {
+
+            font-size: 14px;
+            color: #747d8c;
+            font-weight: 600;
+        }
+
+        .server-card {
+            background: white;
+            padding: 18px;
+            border-radius: 16px;
+            margin-bottom: 16px;
+            border: 1px solid #f1f2f6;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.02);
+        }
+
+        .card-title {
+            font-size: 16px;
+            font-weight: 700;
+            color: #2f3542;
+            margin-bottom: 10px;
+
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .card-text {
+            font-size: 14px;
+            color: #57606f;
+            line-height: 1.6;
+        }
+
+        .feature-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        .feature-icon {
+
+            font-size: 20px;
+            line-height: 1;
+            padding-top: 2px;
+        }
+
+        .feature-content h4 {
+            font-size: 14px;
+            font-weight: 700;
+            color: #2f3542;
+            margin-bottom: 2px;
+        }
+
+        .feature-content p {
+            font-size: 13px;
+            color: #747d8c;
+        }
+
+        .ip-box {
+            background: #f1f2f6;
+
+            padding: 12px;
+            border-radius: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 8px;
+            border: 2px dashed #ced6e0;
+        }
+
+        .ip-code {
+            font-family: monospace;
+            font-size: 13px;
+            font-weight: 700;
+            color: #ff4757;
+            word-break: break-all;
+        }
+
+        .copy-hint {
+            font-size: 11px;
+
+            color: #a4b0be;
+            font-weight: 600;
+            white-space: nowrap;
+            margin-left: 8px;
+        }
+
+        /* 10x10 Game Container Styles */
+        .game-container {
+            background: rgba(255, 255, 255, 0.85);
+            padding: min(20px, 4vw);
+            border-radius: 24px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+            position: relative;
+            width: 100%;
+            container-type: inline-size;
+        }
+
+        header {
+
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        h1 {
+            font-size: min(34px, 8vw);
+            font-weight: 800;
+            background: linear-gradient(45deg, #ff6b6b, #ff8e53);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            line-height: 1;
+        }
+
+        .scores-container {
+            display: flex;
+            gap: 8px;
+        }
+
+
+        .score-box {
+            background: #776e65;
+            color: var(--text-light);
+            padding: 6px 12px;
+            border-radius: 10px;
+            text-align: center;
+            min-width: 65px;
+            position: relative;
+        }
+
+        .score-box .label {
+            font-size: 9px;
+            text-transform: uppercase;
+            font-weight: 600;
+            display: block;
+            opacity: 0.8;
+        }
+
+        .score-box .value {
+
+            font-size: 14px;
+            font-weight: 700;
+        }
+
+        .score-box .addition {
+            position: absolute;
+            bottom: 100%;
+            left: 0;
+            right: 0;
+            color: #ff6b6b;
+            font-weight: 700;
+            font-size: 16px;
+            animation: floatUp 0.6s ease-out forwards;
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .controls {
+            display: flex;
+
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+            gap: 8px;
+        }
+
+        .theme-select {
+            background: white;
+            border: 2px solid #ddd;
+            padding: 8px;
+            border-radius: 10px;
+            font-weight: 600;
+            color: var(--text-dark);
+            cursor: pointer;
+            outline: none;
+            font-size: 13px;
+            max-width: 65%;
+        }
+
+
+        .btn {
+            background: linear-gradient(45deg, var(--primary-color), #ff8e53);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            box-shadow: 0 4px 10px rgba(255, 107, 107, 0.3);
+            font-size: 13px;
+            white-space: nowrap;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(255, 107, 107, 0.4);
+        }
+
+
+        /* Fluid 10x10 Responsive Grid Layout */
+        .grid-container {
+            width: 100%;
+            aspect-ratio: 1 / 1;
+            background: #bbaea0;
+            border-radius: 14px;
+            padding: min(6px, 1.5vw);
+            position: relative;
+            display: grid;
+            grid-template-columns: repeat(10, 1fr);
+            grid-template-rows: repeat(10, 1fr);
+            gap: min(4px, 1vw);
+            touch-action: none;
+        }
+
+        .grid-cell {
+            background: rgba(238, 228, 218, 0.35);
+            border-radius: min(4px, 1vw);
+            width: 100%;
+
+            height: 100%;
+        }
+
+        .tile-container {
+            position: absolute;
+            top: min(6px, 1.5vw);
+            left: min(6px, 1.5vw);
+            right: min(6px, 1.5vw);
+            bottom: min(6px, 1.5vw);
+            pointer-events: none;
+            display: grid;
+            grid-template-columns: repeat(10, 1fr);
+            grid-template-rows: repeat(10, 1fr);
+            gap: min(4px, 1vw);
+        }
+
+        /* Container Query Fluid Text sizing to fit ANY screen size perfectly */
+        .tile {
+            width: 100%;
+
+            height: 100%;
+            border-radius: min(4px, 1vw);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+            font-size: min(14px, 3.2cqw);
+            animation: appear 0.2s ease-in-out;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            text-align: center;
+            overflow: hidden;
+            word-break: break-all;
+            line-height: 1.1;
+        }
+
+        .tile.long-number {
+            font-size: min(10px, 2.3cqw);
+        }
+
+
+        .tile .emoji {
+            font-size: min(20px, 4.5cqw);
+            line-height: 1;
+        }
+
+        .tile .label {
+            font-size: min(9px, 1.8cqw);
+            margin-top: 1px;
+            font-weight: 600;
+            opacity: 0.9;
+            white-space: nowrap;
+        }
+
+        @keyframes appear {
+            0% { transform: scale(0); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        .tile-merged {
+
+            animation: pop 0.2s ease-in-out;
+        }
+
+        @keyframes pop {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+
+        /* 10x10 Custom Tile Colors */
+        .tile-2 { background: #eee4da; color: #776e65; }
+        .tile-4 { background: #ede0c8; color: #776e65; }
+        .tile-8 { background: #f2b179; color: #f9f6f2; }
+        .tile-16 { background: #f59563; color: #f9f6f2; }
+        .tile-32 { background: #f67c5f; color: #f9f6f2; }
+        .tile-64 { background: #f65e3b; color: #f9f6f2; }
+        .tile-128 { background: #edcf72; color: #f9f6f2; box-shadow: 0 0 5px rgba(237,207,114,0.5); }
+        .tile-256 { background: #edcc61; color: #f9f6f2; box-shadow: 0 0 6px rgba(237,204,97,0.6); }
+        .tile-512 { background: #edc850; color: #f9f6f2; box-shadow: 0 0 7px rgba(237,199,80,0.7); }
+
+        .tile-1024 { background: #edc53f; color: #f9f6f2; box-shadow: 0 0 8px rgba(237,197,63,0.8); }
+        .tile-2048 { background: #edc22e; color: #f9f6f2; box-shadow: 0 0 12px rgba(237,194,46,0.9); }
+        .tile-super { background: #3c3a32; color: #f9f6f2; }
+
+        /* Animal Theme Colors */
+        .theme-animal .tile-2 { background: #ffccd5; color: #c9184a; }
+        .theme-animal .tile-4 { background: #ffe5ec; color: #ff4d6d; }
+        .theme-animal .tile-8 { background: #ffb5a7; color: #f77f00; }
+        .theme-animal .tile-16 { background: #fcd5ce; color: #d90429; }
+        .theme-animal .tile-32 { background: #f8ad9d; color: #6a040f; }
+        .theme-animal .tile-64 { background: #f4978e; color: #fff; }
+        .theme-animal .tile-128 { background: #e8c2ca; color: #fff; }
+        .theme-animal .tile-256 { background: #b5e2fa; color: #0077b6; }
+        .theme-animal .tile-512 { background: #90e0ef; color: #03045e; }
+        .theme-animal .tile-1024 { background: #ccff33; color: #38b000; }
+        .theme-animal .tile-2048 { background: #e0aaff; color: #5c0099; }
+
+        .game-message {
+            position: absolute;
+
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(238, 228, 218, 0.9);
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border-radius: 14px;
+            display: none;
+            padding: 10px;
+        }
+
+        .game-message p {
+            font-size: min(32px, 7vw);
+            font-weight: 800;
+            margin-bottom: 16px;
+            color: #776e65;
+            text-align: center;
+        }
+
+
+        .message-container {
+            position: absolute;
+            top: -30px;
+            left: 0;
+            right: 0;
+            text-align: center;
+            font-weight: 700;
+            font-size: 16px;
+            color: #ff6b6b;
+            height: 25px;
+            pointer-events: none;
+        }
+
+        .pop-text {
+            animation: popText 0.8s ease-out forwards;
+            display: inline-block;
+        }
+
+        @keyframes popText {
+
+            0% { transform: scale(0.5) translateY(10px); opacity: 0; }
+            30% { transform: scale(1.2) translateY(-5px); opacity: 1; }
+            100% { transform: scale(1) translateY(-20px); opacity: 0; }
+        }
+
+        .instructions {
+            margin-top: 15px;
+            text-align: center;
+            font-size: min(13px, 3vw);
+            color: #666;
+            line-height: 1.5;
+        }
+
+        .instructions span {
+            background: rgba(255, 255, 255, 0.6);
+            padding: 2px 6px;
+            border-radius: 6px;
+            font-weight: 600;
+        }
+
+
+        /* Multilingual Translation System helpers */
+        .lang-text {
+            display: none;
+        }
+        body.lang-ja .lang-ja { display: inline; }
+        body.lang-ja .lang-ja-block { display: block; }
+        body.lang-en .lang-en { display: inline; }
+        body.lang-en .lang-en-block { display: block; }
+    </style>
+</head>
+<body class="lang-ja">
+
+    <!-- Global Language Switcher -->
+    <div class="global-lang-container">
+        <button class="lang-btn active" id="btn-lang-ja" onclick="setLanguage('ja')">🇯🇵 日本語</button>
+        <button class="lang-btn" id="btn-lang-en" onclick="setLanguage('en')">🇺🇸 English</button>
+    </div>
+
+    <!-- Tab Navigation -->
+
+    <div class="nav-container">
+        <button class="tab-btn active" id="tab-server" onclick="switchView('server')">
+            🌐 <span class="lang-text lang-ja">サーバー紹介</span><span class="lang-text lang-en">Server Info</span>
+        </button>
+        <button class="tab-btn" id="tab-game" onclick="switchView('game')">
+            🕹️ <span class="lang-text lang-ja">10x10 ゲーム</span><span class="lang-text lang-en">10x10 Game</span>
+        </button>
+    </div>
+
+    <!-- Server Info View -->
+    <div class="content-view active" id="view-server">
+        <div class="server-container">
+            <div class="server-header">
+                <span class="server-badge">VANILLA X MYSTERY</span>
+                <div class="server-title">maimodserver</div>
+                <div class="server-subtitle">No Mods, Yet Wonderfully Mysterious!</div>
+            </div>
+
+            <!-- Japanese Server Content -->
+
+            <div class="lang-text lang-ja-block">
+                <div class="server-card">
+                    <div class="card-title">✨ どんなサーバー？</div>
+                    <div class="card-text">
+                        maimodserverは、クライアントへのMod導入が一切不要（No Mod）なバニラ環境のマイクラサーバーです！それなのに、コマンドや独自の仕掛けによって「バニラとは思えない、色々不思議な現象やシステム」が次々と巻き起こる、ちょっと奇妙で最高に楽しい世界を提供しています。
+                    </div>
+                </div>
+
+                <div class="server-card">
+                    <div class="card-title">🌀 3つの不思議ポイント</div>
+                    <div class="feature-item">
+                        <div class="feature-icon">🔌</div>
+                        <div class="feature-content">
+                            <h4>手軽に参加、なのに別世界</h4>
+                            <p>Modパックの重いダウンロードは不要。いつものマイクラで入るだけ！</p>
+                        </div>
+                    </div>
+                    <div class="feature-item">
+                        <div class="feature-icon">🧩</div>
+
+                        <div class="feature-content">
+                            <h4>常識を覆す不思議なギミック</h4>
+                            <p>ブロックの挙動、見たことのないカスタムアイテム、謎の物理演算があなたを惑わせます。</p>
+                        </div>
+                    </div>
+                    <div class="feature-item">
+                        <div class="feature-icon">🦖</div>
+                        <div class="feature-content">
+                            <h4>バニラの限界を突破</h4>
+                            <p>「これ本当にModなし！？」と何度も驚くはず。技術とアイデアの結晶を体感してください。</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="server-card">
+                    <div class="card-title">🚀 参加方法</div>
+                    <div class="card-text">最新のバニラバージョンで、以下のサーバーアドレスを入力して遊びに来てね！</div>
+                    <div class="ip-box">
+                        <span class="ip-code">katherine-tomtom.tun.ply.gg</span>
+
+                        <span class="copy-hint">アドレスをコピー</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- English Server Content -->
+            <div class="lang-text lang-en-block">
+                <div class="server-card">
+                    <div class="card-title">✨ What is maimodserver?</div>
+                    <div class="card-text">
+                        maimodserver is a Vanilla (No Mod) Minecraft server that requires absolutely no client-side modifications! Yet, powered by brilliant commands and vanilla mechanics, it delivers an amazingly mysterious and unique experience that makes you feel like you are playing with fully custom mods.
+                    </div>
+                </div>
+
+                <div class="server-card">
+                    <div class="card-title">🌀 3 Mysterious Pillars</div>
+                    <div class="feature-item">
+                        <div class="feature-icon">🔌</div>
+                        <div class="feature-content">
+
+                            <h4>Zero Setup, Total Freshness</h4>
+                            <p>No heavy modpack installation required. Just log in with your standard vanilla client!</p>
+                        </div>
+                    </div>
+                    <div class="feature-item">
+                        <div class="feature-icon">🧩</div>
+                        <div class="feature-content">
+                            <h4>Mind-Bending Gimmicks</h4>
+                            <p>Prepare to be dazzled by strange block behaviors, unseen custom items, and unexpected mechanics.</p>
+                        </div>
+                    </div>
+                    <div class="feature-item">
+                        <div class="feature-icon">🦖</div>
+                        <div class="feature-content">
+                            <h4>Pushing Vanilla to Its Limit</h4>
+                            <p>You will ask yourself "Is this really No-Mod?" multiple times. Experience a miracle of vanilla technology!</p>
+                        </div>
+                    </div>
+                </div>
+
+
+                <div class="server-card">
+                    <div class="card-title">🚀 How to Join</div>
+                    <div class="card-text">Use the latest standard Minecraft Vanilla client and enter the server IP below!</div>
+                    <div class="ip-box">
+                        <span class="ip-code">katherine-tomtom.tun.ply.gg</span>
+                        <span class="copy-hint">Copy IP</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 10x10 Game View -->
+    <div class="content-view" id="view-game">
+        <div class="game-container">
+            <div class="message-container" id="pop-message-container"></div>
+            <header>
+                <h1>10x10 2048</h1>
+                <div class="scores-container">
+
+                    <div class="score-box">
+                        <span class="label">SCORE</span>
+                        <span class="value" id="score">0</span>
+                        <span class="addition" id="score-addition">+0</span>
+                    </div>
+                    <div class="score-box">
+                        <span class="label">BEST</span>
+                        <span class="value" id="best-score">0</span>
+                    </div>
+                </div>
+            </header>
+
+            <div class="controls">
+                <select class="theme-select" id="theme-select">
+                    <option value="classic">🔢 Classic Numbers / 数字</option>
+                    <option value="animal">🐱 Animal Evolution / どうぶつ</option>
+                </select>
+                <button class="btn" id="restart-btn">
+                    <span class="lang-text lang-ja">リセット</span><span class="lang-text lang-en">Reset</span>
+
+                </button>
+            </div>
+
+            <!-- 10x10 Dynamic Grid Matrix -->
+            <div class="grid-container" id="grid-container">
+                <!-- 100 Grid Cells -->
+                <script>
+                    for(let i=0; i<100; i++) {
+                        document.write('<div class="grid-cell"></div>');
+                    }
+                </script>
+                <div class="tile-container" id="tile-container"></div>
+
+                <!-- Game Messages Custom Text Hook -->
+                <div class="game-message" id="game-message">
+                    <p id="game-message-text">Game Over!</p>
+                    <button class="btn" id="keep-playing-btn" style="display:none; margin-bottom: 10px;">
+                        <span class="lang-text lang-ja">続ける</span><span class="lang-text lang-en">Continue</span>
+                    </button>
+
+                    <button class="btn" id="retry-btn">
+                        <span class="lang-text lang-ja">もう一度</span><span class="lang-text lang-en">Retry</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="instructions">
+                <span class="lang-text lang-ja">PCの方は <span>矢印キー</span>、スマホの方は <span>スワイプ</span> で広大な10x10グリッドの合体を楽しんでね！🐾</span>
+                <span class="lang-text lang-en">Use your <span>Arrow keys</span> or <span>Swipe</span> to merge tiles in this massive 10x10 board! 🐾</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentLanguage = 'ja';
+
+        function switchView(viewName) {
+            document.querySelectorAll('.content-view').forEach(view => view.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+
+            
+            if (viewName === 'game') {
+                document.getElementById('view-game').classList.add('active');
+                document.getElementById('tab-game').classList.add('active');
+                if (window.gameInstance) {
+                    window.gameInstance.updateDOM(); // Refresh DOM spacing upon active layout trigger
+                }
+            } else if (viewName === 'server') {
+                document.getElementById('view-server').classList.add('active');
+                document.getElementById('tab-server').classList.add('active');
+            }
+        }
+
+        function setLanguage(lang) {
+            currentLanguage = lang;
+            document.body.className = `lang-${lang}`;
+            document.querySelectorAll('.global-lang-container .lang-btn').forEach(btn => btn.classList.remove('active'));
+            document.getElementById(`btn-lang-${lang}`).classList.add('active');
+            if (window.gameInstance) {
+
+                window.gameInstance.checkGameState(); 
+            }
+        }
+
+        // --- 10x10 2048 Game Logic Engine ---
+        const ANIMAL_MAP = {
+            2: { emoji: '🐭', name: '🐭' },
+            4: { emoji: '🐰', name: '🐰' },
+            8: { emoji: '🦊', name: '🦊' },
+            16: { emoji: '🐷', name: '🐷' },
+            32: { emoji: '🐵', name: '🐵' },
+            64: { emoji: '🐼', name: '🐼' },
+            128: { emoji: '🦁', name: '🦁' },
+            256: { emoji: '🐯', name: '🐯' },
+            512: { emoji: '🐮', name: '🐮' },
+            1024: { emoji: '🦖', name: '🦖' },
+            2048: { emoji: '🦄', name: '🦄' }
+        };
+
+
+        const CHEER_WORDS = ["Nice!", "Awesome!", "Great!", "Wow!", "Super!", "Evolution!"];
+
+        class Game2048 {
+            constructor() {
+                this.size = 10;
+                this.gridContainer = document.getElementById('grid-container');
+                this.tileContainer = document.getElementById('tile-container');
+                this.scoreDisplay = document.getElementById('score');
+                this.bestScoreDisplay = document.getElementById('best-score');
+                this.scoreAddition = document.getElementById('score-addition');
+                this.gameMessage = document.getElementById('game-message');
+                this.gameMessageText = document.getElementById('game-message-text');
+                this.themeSelect = document.getElementById('theme-select');
+                this.popMessageContainer = document.getElementById('pop-message-container');
+
+                this.score = 0;
+                this.bestScore = parseInt(localStorage.getItem('bestScore10x10_2048')) || 0;
+                this.grid = [];
+                this.theme = 'classic';
+
+                this.won = false;
+                this.over = false;
+                this.keepPlaying = false;
+
+                this.bestScoreDisplay.textContent = this.bestScore;
+
+                this.setupEventListeners();
+                this.initGame();
+            }
+
+            initGame() {
+                this.score = 0;
+                this.won = false;
+                this.over = false;
+                this.keepPlaying = false;
+                this.scoreDisplay.textContent = 0;
+                this.gameMessage.style.display = 'none';
+                document.getElementById('keep-playing-btn').style.display = 'none';
+                this.tileContainer.innerHTML = '';
+
+                
+                this.grid = Array(this.size).fill(null).map(() => Array(this.size).fill(null));
+
+                this.addRandomTile();
+                this.addRandomTile();
+                this.addRandomTile();
+                this.addRandomTile();
+                this.updateDOM();
+            }
+
+            setupEventListeners() {
+                window.addEventListener('keydown', (e) => {
+                    if (!document.getElementById('view-game').classList.contains('active')) return;
+                    if (this.over || (this.won && !this.keepPlaying)) return;
+
+                    let moved = false;
+                    switch(e.key) {
+                        case 'ArrowUp':    moved = this.move(0); e.preventDefault(); break;
+                        case 'ArrowRight': moved = this.move(1); e.preventDefault(); break;
+
+                        case 'ArrowDown':  moved = this.move(2); e.preventDefault(); break;
+                        case 'ArrowLeft':  moved = this.move(3); e.preventDefault(); break;
+                    }
+
+                    if (moved) this.afterMove();
+                });
+
+                let touchStartX = 0;
+                let touchStartY = 0;
+
+                this.gridContainer.addEventListener('touchstart', (e) => {
+                    if (e.touches.length > 1) return;
+                    touchStartX = e.touches[0].clientX;
+                    touchStartY = e.touches[0].clientY;
+                }, { passive: true });
+
+                this.gridContainer.addEventListener('touchmove', (e) => {
+                    if (document.getElementById('view-game').classList.contains('active')) {
+                        e.preventDefault();
+
+                    }
+                }, { passive: false });
+
+                this.gridContainer.addEventListener('touchend', (e) => {
+                    if (this.over || (this.won && !this.keepPlaying)) return;
+
+                    const dx = e.changedTouches[0].clientX - touchStartX;
+                    const dy = e.changedTouches[0].clientY - touchStartY;
+                    const absDx = Math.abs(dx);
+                    const absDy = Math.abs(dy);
+
+                    if (Math.max(absDx, absDy) > 20) { 
+                        let moved = false;
+                        if (absDx > absDy) {
+                            moved = dx > 0 ? this.move(1) : this.move(3);
+                        } else {
+                            moved = dy > 0 ? this.move(2) : this.move(0);
+                        }
+                        if (moved) this.afterMove();
+
+                    }
+                }, { passive: true });
+
+                document.getElementById('restart-btn').addEventListener('click', () => this.initGame());
+                document.getElementById('retry-btn').addEventListener('click', () => this.initGame());
+                document.getElementById('keep-playing-btn').addEventListener('click', () => {
+                    this.keepPlaying = true;
+                    this.gameMessage.style.display = 'none';
+                });
+
+                this.themeSelect.addEventListener('change', (e) => {
+                    this.theme = e.target.value;
+                    if (this.theme === 'animal') {
+                        this.gridContainer.classList.add('theme-animal');
+                    } else {
+                        this.gridContainer.classList.remove('theme-animal');
+                    }
+                    this.updateDOM();
+                });
+
+            }
+
+            addRandomTile() {
+                const emptyCells = [];
+                for (let r = 0; r < this.size; r++) {
+                    for (let c = 0; c < this.size; c++) {
+                        if (!this.grid[r][c]) emptyCells.push({ r, c });
+                    }
+                }
+                if (emptyCells.length > 0) {
+                    const { r, c } = emptyCells[Math.floor(Math.random() * emptyCells.length)];
+                    this.grid[r][c] = {
+                        value: Math.random() < 0.9 ? 2 : 4,
+                        merged: false
+                    };
+                }
+            }
+
+            afterMove() {
+
+                this.addRandomTile();
+                this.updateDOM();
+                this.checkGameState();
+            }
+
+            move(direction) {
+                let moved = false;
+                let scoreGain = 0;
+                let hasCombo = false;
+
+                for (let r = 0; r < this.size; r++) {
+                    for (let c = 0; c < this.size; c++) {
+                        if (this.grid[r][c]) this.grid[r][c].merged = false;
+                    }
+                }
+
+                const rotateGrid = (times) => {
+                    for (let t = 0; t < times; t++) {
+                        let newGrid = Array(this.size).fill(null).map(() => Array(this.size).fill(null));
+
+                        for (let r = 0; r < this.size; r++) {
+                            for (let c = 0; c < this.size; c++) {
+                                newGrid[c][this.size - 1 - r] = this.grid[r][c];
+                            }
+                        }
+                        this.grid = newGrid;
+                    }
+                };
+
+                if (direction === 0) rotateGrid(3);
+                if (direction === 1) rotateGrid(2);
+                if (direction === 2) rotateGrid(1);
+
+                for (let r = 0; r < this.size; r++) {
+                    let row = this.grid[r].filter(cell => cell !== null);
+                    let newRow = [];
+
+                    for (let i = 0; i < row.length; i++) {
+                        if (i + 1 < row.length && row[i].value === row[i+1].value) {
+
+                            const newValue = row[i].value * 2;
+                            newRow.push({ value: newValue, merged: true });
+                            scoreGain += newValue;
+                            hasCombo = true;
+                            if (newValue === 2048 && !this.won) this.won = true;
+                            i++;
+                            moved = true;
+                        } else {
+                            newRow.push({ value: row[i].value, merged: false });
+                        }
+                    }
+
+                    while (newRow.length < this.size) newRow.push(null);
+
+                    for (let c = 0; c < this.size; c++) {
+                        if (JSON.stringify(this.grid[r][c]) !== JSON.stringify(newRow[c])) moved = true;
+                    }
+                    this.grid[r] = newRow;
+                }
+
+
+                if (direction === 0) rotateGrid(1);
+                if (direction === 1) rotateGrid(2);
+                if (direction === 2) rotateGrid(3);
+
+                if (scoreGain > 0) this.updateScore(scoreGain);
+                if (hasCombo) this.triggerPopMessage();
+
+                return moved;
+            }
+
+            updateScore(gain) {
+                this.score += gain;
+                this.scoreDisplay.textContent = this.score;
+
+                if (this.score > this.bestScore) {
+                    this.bestScore = this.score;
+                    this.bestScoreDisplay.textContent = this.bestScore;
+                    localStorage.setItem('bestScore10x10_2048', this.bestScore);
+                }
+
+
+                this.scoreAddition.textContent = `+${gain}`;
+                const newAddition = this.scoreAddition.cloneNode(true);
+                this.scoreAddition.parentNode.replaceChild(newAddition, this.scoreAddition);
+                this.scoreAddition = newAddition;
+            }
+
+            triggerPopMessage() {
+                const word = CHEER_WORDS[Math.floor(Math.random() * CHEER_WORDS.length)];
+                this.popMessageContainer.innerHTML = `<span class="pop-text">${word}</span>`;
+            }
+
+            checkGameState() {
+                if (this.won && !this.keepPlaying) {
+                    this.showMessage(true);
+                    return;
+                }
+                for (let r = 0; r < this.size; r++) {
+                    for (let c = 0; c < this.size; c++) {
+                        if (!this.grid[r][c]) return;
+
+                    }
+                }
+                for (let r = 0; r < this.size; r++) {
+                    for (let c = 0; c < this.size; c++) {
+                        const current = this.grid[r][c].value;
+                        if (r + 1 < this.size && this.grid[r+1][c].value === current) return;
+                        if (c + 1 < this.size && this.grid[r][c+1].value === current) return;
+                    }
+                }
+                this.over = true;
+                this.showMessage(false);
+            }
+
+            showMessage(isWin) {
+                this.gameMessage.style.display = 'flex';
+                if (isWin) {
+                    this.gameMessageText.textContent = currentLanguage === 'ja' ? '🎉 2048達成！' : '🎉 2048 Reached!';
+                    this.gameMessageText.style.color = '#ff6b6b';
+                    document.getElementById('keep-playing-btn').style.display = 'inline-block';
+
+                } else {
+                    this.gameMessageText.textContent = currentLanguage === 'ja' ? 'Game Over 🐾' : 'Game Over 🐾';
+                    this.gameMessageText.style.color = '#776e65';
+                    document.getElementById('keep-playing-btn').style.display = 'none';
+                }
+            }
+
+            updateDOM() {
+                this.tileContainer.innerHTML = '';
+                for (let r = 0; r < this.size; r++) {
+                    for (let c = 0; c < this.size; c++) {
+                        const cell = this.grid[r][c];
+                        if (cell) {
+                            const tileElem = document.createElement('div');
+                            tileElem.style.gridRow = r + 1;
+                            tileElem.style.gridColumn = c + 1;
+
+                            const valueClass = cell.value <= 2048 ? cell.value : 'super';
+                            tileElem.className = `tile tile-${valueClass}`;
+
+                            if (cell.value >= 100) tileElem.classList.add('long-number');
+
+                            if (this.theme === 'animal') {
+                                const animalInfo = ANIMAL_MAP[cell.value] || { emoji: '👑', name: '👑' };
+                                tileElem.innerHTML = `
+                                    <span class="emoji">${animalInfo.emoji}</span>
+                                    <span class="label">${animalInfo.name}</span>
+                                `;
+                            } else {
+                                tileElem.textContent = cell.value;
+                            }
+                            this.tileContainer.appendChild(tileElem);
+                        }
+                    }
+                }
+            }
+        }
+
+        window.onload = function() {
+
+            window.gameInstance = new Game2048();
+        };
+    </script>
+</body>
+</html>
+
+
