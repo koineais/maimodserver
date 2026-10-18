@@ -1,4 +1,4 @@
-# maimodserver 画面フィットポータル＆同期掲示板・完全版
+# maimodserver 名前設定機能付き・リアルタイム同期ポータル
 
 <!DOCTYPE html>
 <html lang="ja" class="h-full w-full overflow-hidden">
@@ -6,20 +6,26 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>maimodserver Portal Hub</title>
+  
   <!-- Tailwind CSS (Allowed Whitelist) -->
   <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Firebase Core & Firestore SDKs (Allowed Whitelist: gstatic.com) -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=DotGothic16&display=swap');
     
     .font-pixel {
       font-family: 'DotGothic16', 'Press Start 2P', monospace;
+
     }
     
     /* Hide scrollbars completely for forced screen-fit behavior */
     .no-scrollbar::-webkit-scrollbar {
       display: none;
     }
-
     .no-scrollbar {
       -ms-overflow-style: none;
       scrollbar-width: none;
@@ -33,13 +39,12 @@
 
     .swipe-zone {
       touch-action: none;
+
     }
 
-    /* Ensure rendering logic doesn't break canvas sizes */
     canvas {
       image-rendering: pixelated;
     }
-
   </style>
 </head>
 <body class="bg-slate-950 text-slate-100 font-sans h-full w-full flex flex-col select-none overflow-hidden antialiased">
@@ -54,12 +59,12 @@
       <button id="btn-ja" onclick="switchLanguage('ja')" class="px-2.5 py-0.5 text-xs font-bold rounded transition-all bg-green-600 text-white">JA</button>
       <button id="btn-en" onclick="switchLanguage('en')" class="px-2.5 py-0.5 text-xs font-bold rounded transition-all text-slate-400 hover:text-white">EN</button>
     </div>
+
   </header>
 
   <!-- NAVIGATION TABS: Horizontal Scrollable Tab Bar (42px) -->
   <nav class="bg-slate-900 px-2 border-b border-slate-800 overflow-x-auto no-scrollbar flex space-x-1 h-[42px] flex-shrink-0 z-40">
     <button onclick="switchTab('intro')" id="tab-intro" class="tab-btn px-3 py-1.5 text-xs font-medium rounded-t-lg transition-all border-b-2 border-green-500 text-green-400 bg-slate-950 flex-shrink-0 flex items-center space-x-1">
-
       <span>🌐</span> <span data-i18n="navIntro">サーバー紹介</span>
     </button>
     <button onclick="switchTab('game2048')" id="tab-game2048" class="tab-btn px-3 py-1.5 text-xs font-medium rounded-t-lg transition-all border-b-2 border-transparent text-slate-400 hover:text-slate-200 flex-shrink-0 flex items-center space-x-1">
@@ -74,13 +79,13 @@
     <button onclick="switchTab('memory')" id="tab-memory" class="tab-btn px-3 py-1.5 text-xs font-medium rounded-t-lg transition-all border-b-2 border-transparent text-slate-400 hover:text-slate-200 flex-shrink-0 flex items-center space-x-1">
       <span>🧠</span> <span data-i18n="navMemory">神経衰弱</span>
     </button>
+
     <button onclick="switchTab('board')" id="tab-board" class="tab-btn px-3 py-1.5 text-xs font-medium rounded-t-lg transition-all border-b-2 border-transparent text-slate-400 hover:text-slate-200 flex-shrink-0 flex items-center space-x-1">
       <span>💬</span> <span data-i18n="navBoard">同期掲示板</span>
     </button>
   </nav>
 
-
-  <!-- MAIN VIEWPORT CONTAINER: Flexible Area with strict overflow constraint -->
+  <!-- MAIN VIEWPORT CONTAINER -->
   <main class="flex-1 w-full max-w-4xl mx-auto p-3 flex flex-col overflow-hidden relative min-h-0">
 
     <!-- 1. SERVER INTRO PAGE -->
@@ -94,12 +99,12 @@
         </p>
         <div class="bg-slate-950/80 p-4 rounded-lg border border-slate-800 flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-2 sm:space-y-0 backdrop-blur-sm">
           <div>
+
             <span class="text-[10px] text-slate-500 block uppercase tracking-wider font-bold" data-i18n="serverAddrLabel">サーバーアドレス</span>
             <span class="text-sm md:text-base font-mono text-green-300 font-bold select-all">katherine-tomtom.tun.ply.gg</span>
           </div>
           <button onclick="copyServerAddress()" id="copy-btn" class="bg-green-600 hover:bg-green-500 text-white font-bold py-2 px-4 rounded-md text-xs transition-all shadow-md flex items-center justify-center space-x-2 flex-shrink-0">
             <span id="copy-btn-text" data-i18n="copyBtn">アドレスをコピー</span>
-
           </button>
         </div>
       </div>
@@ -114,12 +119,12 @@
           <div class="text-base mb-1">🔮</div>
           <h4 class="font-bold text-slate-100 text-xs mb-1" data-i18n="feat2Title">魔法のような独自ギミック</h4>
           <p class="text-[11px] text-slate-400 leading-normal" data-i18n="feat2Desc">特殊コマンド群を極限までチューニング。バニラとは思えない特殊スキルや、不思議な便利ユーティリティが稼働中！</p>
+
         </div>
         <div class="bg-slate-900 border border-slate-800 p-4 rounded-lg">
           <div class="text-base mb-1">⚔️</div>
           <h4 class="font-bold text-slate-100 text-xs mb-1" data-i18n="feat3Title">広大なカスタムダンジョン</h4>
           <p class="text-[11px] text-slate-400 leading-normal" data-i18n="feat3Desc">強力なボスが待ち受ける特製構造物。仲間と協力してギミックを解き明かす、RPGさながらのハラハラした攻略が楽しめます。</p>
-
         </div>
       </div>
 
@@ -134,12 +139,12 @@
             <div class="font-bold text-green-500">02.サーバー追加</div>
             <p class="text-slate-400 text-[10px]">「サーバーを追加」をクリック</p>
           </div>
+
           <div class="bg-slate-950 p-2 rounded border border-slate-800/80">
             <div class="font-bold text-green-500">03.アドレス入力</div>
             <p class="text-slate-400 text-[10px]">上記アドレスをコピペ</p>
           </div>
           <div class="bg-slate-950 p-2 rounded border border-slate-800/80">
-
             <div class="font-bold text-green-500">04.冒険開始！</div>
             <p class="text-slate-400 text-[10px]">接続完了！世界を楽しもう</p>
           </div>
@@ -147,39 +152,37 @@
       </div>
     </section>
 
-    <!-- 2. 5x5 2048 GAME (IPAD SWIPE SUPPORT + PERFECT HEIGHT LOCK) -->
+    <!-- 2. 5x5 2048 GAME (IPAD SWIPE SUPPORT) -->
     <section id="content-game2048" class="tab-content hidden h-full flex flex-col items-center justify-between overflow-hidden min-h-0">
       <div class="w-full flex justify-between items-center max-w-xs flex-shrink-0">
         <div>
           <span class="text-[10px] text-slate-400 block" data-i18n="scoreLabel">スコア</span>
           <span id="score-2048" class="text-base font-bold font-pixel text-yellow-400">0</span>
         </div>
+
         <div class="flex items-center space-x-2">
           <div class="flex bg-slate-950 p-0.5 rounded border border-slate-800 text-[10px]">
             <button id="theme-num-btn" onclick="set2048Theme('number')" class="px-2 py-0.5 rounded bg-blue-600 text-white" data-i18n="themeNumber">数字</button>
             <button id="theme-ani-btn" onclick="set2048Theme('animal')" class="px-2 py-0.5 rounded text-slate-400" data-i18n="themeAnimal">どうぶつ</button>
           </div>
-
           <button onclick="init2048()" class="bg-slate-800 hover:bg-slate-700 text-[10px] font-bold py-0.5 px-2 rounded text-slate-200" data-i18n="restartBtn">リセット</button>
         </div>
       </div>
 
-      <!-- Max-bound aspect ratio layout for absolute screen fit -->
       <div class="bg-slate-950 p-1.5 rounded-xl border-2 border-slate-800 w-full max-w-[280px] xs:max-w-[310px] sm:max-w-[330px] aspect-square grid grid-cols-5 gap-1 shadow-inner swipe-zone flex-shrink-0" id="grid-2048">
-        <!-- JS Cells Dynamic Output -->
+        <!-- JS Grid Elements -->
       </div>
 
       <div class="text-[9px] text-slate-400 text-center select-none flex-shrink-0" data-i18n="support2048Hint">iPad/スマホ: 盤面をスワイプ！ / PC: 矢印キー</div>
       <div id="msg-2048" class="hidden text-xs font-bold text-center text-red-400 bg-red-950/40 border border-red-900/60 p-1 rounded max-w-xs w-full flex-shrink-0"></div>
 
-      <!-- Compact hardware emulator pad for touch screen users -->
       <div class="grid grid-cols-3 gap-1 w-28 flex-shrink-0 mb-1">
         <div></div>
         <button onclick="move2048('up')" class="w-8 h-8 bg-slate-800 active:bg-slate-700 rounded flex items-center justify-center font-bold border border-slate-700 text-sm">▲</button>
+
         <div></div>
         <button onclick="move2048('left')" class="w-8 h-8 bg-slate-800 active:bg-slate-700 rounded flex items-center justify-center font-bold border border-slate-700 text-sm">◀</button>
         <div class="w-8 h-8 flex items-center justify-center text-[10px] text-slate-500 font-pixel">5x5</div>
-
         <button onclick="move2048('right')" class="w-8 h-8 bg-slate-800 active:bg-slate-700 rounded flex items-center justify-center font-bold border border-slate-700 text-sm">▶</button>
         <div></div>
         <button onclick="move2048('down')" class="w-8 h-8 bg-slate-800 active:bg-slate-700 rounded flex items-center justify-center font-bold border border-slate-700 text-sm">▼</button>
@@ -197,9 +200,9 @@
         </div>
       </div>
 
+
       <div class="w-full max-w-[200px] flex flex-col items-center justify-center space-y-2 flex-shrink-0">
         <div class="w-full bg-slate-950 p-2 rounded border border-slate-800 flex justify-between items-center">
-
           <div>
             <span class="text-[9px] text-slate-500 block uppercase font-bold" data-i18n="scoreLabel">スコア</span>
             <span id="score-tetris" class="text-base font-bold font-pixel text-yellow-400">0</span>
@@ -217,9 +220,9 @@
             <button onclick="handleTetrisControl('right')" class="w-8 h-8 bg-slate-800 active:bg-slate-700 rounded-full flex items-center justify-center border border-slate-700 text-xs">▶</button>
             <div></div>
             <button onclick="handleTetrisControl('down')" class="w-8 h-8 bg-slate-800 active:bg-slate-700 rounded-full flex items-center justify-center border border-slate-700 text-xs">▼</button>
+
             <div></div>
           </div>
-
           <div class="text-[8px] text-slate-500 text-center select-none mt-0.5" data-i18n="tetrisHint">PC: 矢印キー（上=回転, スペース=落下）</div>
         </div>
       </div>
@@ -237,9 +240,9 @@
 
       <div class="relative bg-slate-950 p-1 rounded-xl border-2 border-slate-800 w-full max-w-[250px] xs:max-w-[280px] aspect-square shadow-inner flex justify-center items-center flex-shrink-0">
         <canvas id="snake-canvas" width="400" height="400" class="bg-slate-950 rounded block w-full h-full"></canvas>
+
         <div id="msg-snake" class="absolute inset-0 bg-slate-950/90 rounded-xl flex flex-col items-center justify-center text-center hidden p-4">
           <p class="text-base font-bold font-pixel text-red-500 mb-2" data-i18n="gameOver">ゲームオーバー！</p>
-
           <button onclick="startSnake()" class="bg-green-600 hover:bg-green-500 text-white font-bold py-1 px-4 rounded text-xs" data-i18n="restartBtn">もう一度プレイ</button>
         </div>
       </div>
@@ -257,9 +260,9 @@
       </div>
     </section>
 
+
     <!-- 5. CRAFT MEMORY GAME -->
     <section id="content-memory" class="tab-content hidden h-full flex flex-col items-center justify-start space-y-2 overflow-hidden min-h-0">
-
       <div class="w-full flex justify-between items-center max-w-sm flex-shrink-0">
         <div>
           <span class="text-[10px] text-slate-400 block" data-i18n="movesLabel">めくった回数</span>
@@ -274,32 +277,37 @@
         </div>
       </div>
 
-      <!-- Added min-h-0 overflow-y-auto to guarantee absolute grid compression inside strict containers -->
       <div id="grid-memory" class="bg-slate-950 p-2 rounded-xl border-2 border-slate-800 w-full max-w-[290px] xs:max-w-[320px] flex-1 grid gap-1 shadow-inner overflow-y-auto no-scrollbar min-h-0">
-        <!-- JS Grid Injections -->
+        <!-- JS Grid Cards Injections -->
       </div>
-      <div id="msg-memory" class="hidden text-xs font-bold text-center text-green-400 bg-green-950/40 border border-green-900/60 p-1 rounded max-w-sm w-full flex-shrink-0"></div>
 
+      <div id="msg-memory" class="hidden text-xs font-bold text-center text-green-400 bg-green-950/40 border border-green-900/60 p-1 rounded max-w-sm w-full flex-shrink-0"></div>
     </section>
 
     <!-- 6. GLOBAL SYNC FORUM BOARD -->
     <section id="content-board" class="tab-content hidden h-full flex flex-col justify-between overflow-hidden min-h-0">
       <div class="bg-slate-900 border border-slate-800 p-2.5 rounded-xl mb-1.5 flex-shrink-0">
         <h3 class="text-xs font-bold font-pixel text-green-400 flex items-center space-x-2" data-i18n="boardTitle">全員同期掲示板 (Markdown対応)</h3>
-        <p class="text-[10px] text-slate-400 mt-0.5 leading-normal" data-i18n="boardSubtitle">同じ端末内の複数タブやセッション間で自動同期。マークダウン記法によるプレビューレンダリングに対応しています。</p>
+        <p class="text-[10px] text-slate-400 mt-0.5 leading-normal" data-i18n="boardSubtitle">Firebaseを設定すると、GitHub Pages上から世界中全てのユーザー間で本物のリアルタイム書き込み同期が稼働します。</p>
       </div>
 
-      <!-- Messages Stream Flow - Forced Scroll Frame with priority text sizes -->
       <div id="board-messages" class="flex-1 bg-slate-950 border border-slate-800 rounded-xl p-3 overflow-y-auto space-y-2.5 no-scrollbar text-xs min-h-0">
         <!-- Dynamic Posts Feed -->
       </div>
 
       <!-- User Post Form Area -->
       <div class="mt-2 bg-slate-900 border border-slate-800 p-2 rounded-xl flex flex-col space-y-1.5 flex-shrink-0">
+        
+        <!-- Editable Handle Name Wrapper Field -->
+        <div class="flex items-center space-x-2 px-1">
+
+          <span class="text-[10px] text-slate-400 font-pixel" data-i18n="nameLabel">名前:</span>
+          <input id="board-username" type="text" maxlength="15" class="bg-slate-950 text-slate-100 px-2 py-0.5 rounded border border-slate-800 text-xs focus:outline-none focus:border-green-500 w-36 font-pixel select-text" data-i18n-holder="namePlaceholder" placeholder="匿名プレイヤー">
+        </div>
+
         <textarea id="board-input" rows="2" class="w-full bg-slate-950 text-slate-100 p-2 rounded border border-slate-800 text-xs focus:outline-none focus:border-green-500 placeholder-slate-600 no-scrollbar select-text" data-i18n-holder="boardPlaceholder" placeholder="メッセージを入力... (Markdown対応: **太字**, # 見出し, - リスト, `コード`)"></textarea>
         <div class="flex justify-between items-center">
           <div class="text-[8px] text-slate-500 font-mono tracking-tight">Markdown: # title | **bold** | - item | `code`</div>
-
           <button onclick="postBoardMessage()" class="bg-green-600 hover:bg-green-500 active:scale-95 font-bold px-4 py-1 rounded text-xs text-white transition-all flex items-center space-x-1 flex-shrink-0">
             <span>🚀</span> <span data-i18n="postBtn">投稿する</span>
           </button>
@@ -309,17 +317,31 @@
 
   </main>
 
-  <!-- APP FOOTER: Compact Fixed Height (28px) -->
+  <!-- APP FOOTER (28px) -->
   <footer class="bg-slate-900 border-t border-slate-800 text-center py-1.5 text-[10px] text-slate-500 h-[28px] flex-shrink-0 flex items-center justify-center">
     <p>&copy; 2026 maimodserver. Full Dynamic-Fit System.</p>
+
   </footer>
 
   <!-- CLIENT DATA & APPLICATION LOGIC ENGINE -->
   <script>
+    // --- FIREBASE REALTIME GLOBAL SYNC CONFIGURATION ---
+    const firebaseConfig = {
+      apiKey: "YOUR_FIREBASE_API_KEY",
+      authDomain: "YOUR_FIREBASE_AUTH_DOMAIN",
+      projectId: "YOUR_FIREBASE_PROJECT_ID",
+      storageBucket: "YOUR_FIREBASE_STORAGE_BUCKET",
+      messagingSenderId: "YOUR_FIREBASE_MESSAGING_SENDER_ID",
+      appId: "YOUR_FIREBASE_APP_ID"
+    };
+
+    let useFirebase = false;
+    let db = null;
+
     const i18nDict = {
       ja: {
-        navIntro: "🌐 サーバー紹介",
 
+        navIntro: "🌐 サーバー紹介",
         nav2048: "🔢 5x5 2048",
         navTetris: "🧱 テトリス",
         navSnake: "🐍 スネーク",
@@ -338,16 +360,18 @@
         themeAnimal: "どうぶつ",
         restartBtn: "リセット",
         gameOver: "ゲームオーバー！",
-        tetrisHint: "PC: 矢印キー（上=回転, スペース=落下）",
 
+        tetrisHint: "PC: 矢印キー（上=回転, スペース=落下）",
         win2048: "おめでとうございます！2048を達成しました！",
         lose2048: "ゲームオーバー！動かせるマスがありません。",
         winMemory: "クリア！すべてのペアを見つけました！ 🎉",
         support2048Hint: "iPad/スマホ: 盤面をスワイプ！ / PC: 矢印キー",
         boardTitle: "全員同期掲示板 (Markdown対応)",
-        boardSubtitle: "同じ端末内の複数タブやセッション間で自動同期。マークダウン記法によるプレビューレンダリングに対応しています。",
+        boardSubtitle: "Firebaseを設定すると、GitHub Pages上から世界中全てのユーザー間で本物のリアルタイム書き込み同期が稼働します。",
         boardPlaceholder: "メッセージを入力... (Markdown対応: **太字**, # 見出し, - リスト, `コード`)",
-        postBtn: "投稿する"
+        postBtn: "投稿する",
+        nameLabel: "名前:",
+        namePlaceholder: "匿名プレイヤー"
       },
       en: {
         navIntro: "🌐 Info",
@@ -356,10 +380,10 @@
         navSnake: "🐍 Snake",
         navMemory: "🧠 Memory",
         navBoard: "💬 Board",
+
         heroBadge: "Next-Gen Vanilla Evolution",
         introTitle: "Welcome to maimodserver",
         introSubtitle: "No client mods required! A unique vanilla Minecraft server powered by advanced custom commands and mechanics providing a magical gameplay experience.",
-
         serverAddrLabel: "SERVER ADDRESS",
         copyBtn: "Copy Host",
         copied: "Copied!",
@@ -376,15 +400,18 @@
         winMemory: "Success! You found all card pairs! 🎉",
         support2048Hint: "iPad/Mobile: Swipe Grid View / PC: Arrows",
         boardTitle: "Global Sync Forum (Markdown Enabled)",
-        boardSubtitle: "Instant cross-tab transmission sync mockup pipeline. Parse syntax markers freely.",
-        boardPlaceholder: "Enter markdown context text... (e.g. # Header, **bold**, - list, `code`)",
-        postBtn: "Post Msg"
 
+        boardSubtitle: "When Firebase is configured, true global cross-device synchronization will operate seamlessly on GitHub Pages.",
+        boardPlaceholder: "Enter markdown context text... (e.g. # Header, **bold**, - list, `code`)",
+        postBtn: "Post Msg",
+        nameLabel: "Name:",
+        namePlaceholder: "Anonymous Miner"
       }
     };
 
     let activeLang = 'ja';
     let currentActiveTab = 'intro';
+    let boardMessages = [];
 
     window.onload = function() {
       switchLanguage('ja');
@@ -392,14 +419,13 @@
       setup2048TouchGestures();
       initBoardEngine();
       
-      // Strict layout guard checking against unwanted bouncing drag events on touch vectors
       window.addEventListener('keydown', function(e) {
+
         if(["Space", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].indexOf(e.code) > -1) {
           if (currentActiveTab !== 'intro' && currentActiveTab !== 'board') {
             e.preventDefault();
           }
         }
-
       }, false);
     };
 
@@ -415,11 +441,11 @@
         if (i18nDict[langCode][placeholderKey]) element.setAttribute('placeholder', i18nDict[langCode][placeholderKey]);
       });
 
+
       if(langCode === 'ja') {
         document.getElementById('btn-ja').className = "px-2.5 py-0.5 text-xs font-bold rounded transition-all bg-green-600 text-white";
         document.getElementById('btn-en').className = "px-2.5 py-0.5 text-xs font-bold rounded transition-all text-slate-400 hover:text-white";
       } else {
-
         document.getElementById('btn-en').className = "px-2.5 py-0.5 text-xs font-bold rounded transition-all bg-green-600 text-white";
         document.getElementById('btn-ja').className = "px-2.5 py-0.5 text-xs font-bold rounded transition-all text-slate-400 hover:text-white";
       }
@@ -435,11 +461,11 @@
       document.body.appendChild(dummyTextAreaNode);
       dummyTextAreaNode.select();
       document.execCommand("copy");
+
       document.body.removeChild(dummyTextAreaNode);
 
       const copyBtnTxt = document.getElementById('copy-btn-text');
       copyBtnTxt.innerText = i18nDict[activeLang]['copied'];
-
       setTimeout(() => { copyBtnTxt.innerText = i18nDict[activeLang]['copyBtn']; }, 1800);
     }
 
@@ -455,11 +481,11 @@
 
       const activeSection = document.getElementById(`content-${targetTabId}`);
       activeSection.classList.remove('hidden');
+
       if (targetTabId === 'intro') activeSection.classList.add('block');
       else activeSection.classList.add('flex');
 
       document.querySelectorAll('.tab-btn').forEach(btn => {
-
         btn.classList.remove('border-green-500', 'text-green-400', 'bg-slate-950');
         btn.classList.add('border-transparent', 'text-slate-400');
       });
@@ -476,10 +502,10 @@
     }
 
 
+
     // ==========================================
     // MODULE 1: 5x5 2048 PUZZLE ENGINE
     // ==========================================
-
     let board2048 = [];
     let score248Val = 0;
     let theme2048Mode = 'number';
@@ -496,10 +522,10 @@
       8: "bg-orange-300 text-slate-900",
       16: "bg-orange-400 text-white",
       32: "bg-red-400 text-white",
+
       64: "bg-red-500 text-white",
       128: "bg-yellow-300 text-slate-950 shadow-md",
       256: "bg-yellow-400 text-slate-950 shadow-md",
-
       512: "bg-green-400 text-slate-950 shadow-md",
       1024: "bg-purple-500 text-white shadow-lg",
       2048: "bg-indigo-600 text-white shadow-xl animate-pulse"
@@ -516,10 +542,10 @@
       board2048 = Array(25).fill(0);
       score248Val = 0;
       document.getElementById('score-2048').innerText = score248Val;
+
       document.getElementById('msg-2048').classList.add('hidden');
       spawn2048Tile(); spawn2048Tile();
       render2048Board();
-
     }
 
     function spawn2048Tile() {
@@ -536,10 +562,10 @@
       container.innerHTML = '';
       board2048.forEach(value => {
         const cell = document.createElement('div');
+
         cell.className = `flex flex-col items-center justify-center font-pixel rounded text-xs sm:text-sm font-bold aspect-square select-none ${tileBgColors[value] || 'bg-purple-700 text-white'}`;
         if(value > 0) {
           cell.innerText = theme2048Mode === 'animal' ? (animalMap[value] || "👾") : value;
-
         } else {
           cell.innerText = '';
         }
@@ -556,10 +582,10 @@
       targetArea.addEventListener('touchend', function(e) {
         let dx = e.changedTouches[0].screenX - t2048StartX;
         let dy = e.changedTouches[0].screenY - t2048StartY;
+
         let absDx = Math.abs(dx); let absDy = Math.abs(dy);
         if (Math.max(absDx, absDy) > 25) {
           if (absDx > absDy) { if (dx > 0) move2048('right'); else move2048('left'); }
-
           else { if (dy > 0) move2048('down'); else move2048('up'); }
         }
       }, { passive: true });
@@ -576,10 +602,10 @@
       } else if (direction === 'down') {
         let transposed = transpose5x5(board2048); let flipped = reverse5x5(transposed); let res = slide2048Left(flipped);
         let unflipped = reverse5x5(res.board); board2048 = transpose5x5(unflipped); treats = res.moved;
+
       }
       if(treats) {
         spawn2048Tile(); render2048Board();
-
         document.getElementById('score-2048').innerText = score248Val;
         check2048GameOver();
       }
@@ -596,10 +622,10 @@
             let combinedVal = filteredRow[j] * 2; combinedRow.push(combinedVal);
             score248Val += combinedVal; j++; moved = true;
           } else { combinedRow.push(filteredRow[j]); }
+
         }
         while(combinedRow.length < 5) combinedRow.push(0);
         for(let k=0; k<5; k++) { if(row[k] !== combinedRow[k]) moved = true; }
-
         freshBoard = freshBoard.concat(combinedRow);
       }
       return { board: freshBoard, moved: moved };
@@ -617,9 +643,9 @@
       return out;
     }
 
+
     function check2048GameOver() {
       if(board2048.includes(2048)) {
-
         const msg = document.getElementById('msg-2048');
         msg.innerText = i18nDict[activeLang]['win2048'];
         msg.classList.remove('hidden', 'text-red-400'); msg.classList.add('text-green-400'); return;
@@ -637,9 +663,9 @@
           const msg = document.getElementById('msg-2048');
           msg.innerText = i18nDict[activeLang]['lose2048'];
           msg.classList.remove('hidden', 'text-green-400'); msg.classList.add('text-red-400');
+
         }
       }
-
     }
 
 
@@ -657,9 +683,9 @@
     };
     const blockColorsDict = ['#0f172a', '#22d3ee', '#facc15', '#a855f7', '#22c55e', '#ef4444', '#3b82f6', '#f97316'];
 
+
     function createTetrisGrid() {
       let grid = []; for(let r=0; r<20; r++) grid.push(Array(10).fill(0)); return grid;
-
     }
     function generateRandomPiece() {
       const pieceKeys = ['I','O','T','S','Z','J','L'];
@@ -677,9 +703,9 @@
     function stopTetrisLoop() { if(tetrisTimer) { clearInterval(tetrisTimer); tetrisTimer = null; } }
 
     function updateTetrisTick() {
+
       currentPiece.y++;
       if(detectTetrisCollision()) {
-
         currentPiece.y--; lockTetrisPiece(); clearTetrisRows(); currentPiece = generateRandomPiece();
         if(detectTetrisCollision()) { document.getElementById('msg-tetris').classList.remove('hidden'); stopTetrisLoop(); }
       }
@@ -697,9 +723,9 @@
           }
         }
       }
+
       return false;
     }
-
 
     function lockTetrisPiece() {
       const m = currentPiece.matrix;
@@ -717,10 +743,10 @@
       }
       if(linesCount > 0) {
         tetrisScore += [0, 100, 300, 500, 800][linesCount] || 1000;
+
         document.getElementById('score-tetris').innerText = tetrisScore;
       }
     }
-
 
     function drawTetrisScreen() {
       tetrisCtx.fillStyle = '#020617'; tetrisCtx.fillRect(0, 0, tetrisCanvas.width, tetrisCanvas.height);
@@ -737,11 +763,11 @@
 
     function drawTetrisBlock(x, y, colorHex) {
       tetrisCtx.fillStyle = colorHex; tetrisCtx.fillRect(x*blockScaleSize, y*blockScaleSize, blockScaleSize-1, blockScaleSize-1);
+
     }
 
     function handleTetrisControl(action) {
       if(!currentPiece || !tetrisTimer) return;
-
       if(action === 'left') { currentPiece.x--; if(detectTetrisCollision()) currentPiece.x++; }
       else if(action === 'right') { currentPiece.x++; if(detectTetrisCollision()) currentPiece.x--; }
       else if(action === 'down') { currentPiece.y++; if(detectTetrisCollision()) currentPiece.y--; }
@@ -757,9 +783,9 @@
         currentPiece.y--; lockTetrisPiece(); clearTetrisRows(); currentPiece = generateRandomPiece();
         if(detectTetrisCollision()) { document.getElementById('msg-tetris').classList.remove('hidden'); stopTetrisLoop(); }
       }
+
       drawTetrisScreen();
     }
-
 
 
     // ==========================================
@@ -777,11 +803,11 @@
       snakeArr = [{ x: 10, y: 10 }, { x: 9, y: 10 }, { x: 8, y: 10 }];
       snakeDir = { x: 1, y: 0 }; bufferedDir = { x: 1, y: 0 };
       spawnSnakeFood(); drawSnakeFrame(); snakeTimer = setInterval(updateSnakeTick, 130);
+
     }
     function stopSnakeLoop() { if(snakeTimer) { clearInterval(snakeTimer); snakeTimer = null; } }
 
     function spawnSnakeFood() {
-
       let clean = false;
       while(!clean) {
         snakeFoodPos = { x: Math.floor(Math.random() * gridMapUnits), y: Math.floor(Math.random() * gridMapUnits) };
@@ -790,18 +816,18 @@
     }
 
     function updateSnakeTick() {
-      snakeDir = bufferedDir;
+      textDir = bufferedDir; snakeDir = textDir;
       const head = { x: snakeArr[0].x + snakeDir.x, y: snakeArr[0].y + snakeDir.y };
       if(head.x < 0 || head.x >= gridMapUnits || head.y < 0 || head.y >= gridMapUnits) { triggerSnakeGameOver(); return; }
       for(let seg of snakeArr) { if(seg.x === head.x && seg.y === head.y) { triggerSnakeGameOver(); return; } }
 
       snakeArr.unshift(head);
       if(head.x === snakeFoodPos.x && head.y === snakeFoodPos.y) {
+
         snakeScore += 10; document.getElementById('score-snake').innerText = snakeScore; spawnSnakeFood();
       } else { snakeArr.pop(); }
       drawSnakeFrame();
     }
-
     function triggerSnakeGameOver() { document.getElementById('msg-snake').classList.remove('hidden'); stopSnakeLoop(); }
 
     function drawSnakeFrame() {
@@ -817,11 +843,11 @@
       });
     }
     function handleSnakeControl(dirCmd) {
+
       if(dirCmd === 'up' && snakeDir.y === 0) bufferedDir = { x: 0, y: -1 };
       if(dirCmd === 'down' && snakeDir.y === 0) bufferedDir = { x: 0, y: 1 };
       if(dirCmd === 'left' && snakeDir.x === 0) bufferedDir = { x: -1, y: 0 };
       if(dirCmd === 'right' && snakeDir.x === 0) bufferedDir = { x: 1, y: 0 };
-
     }
 
 
@@ -837,11 +863,11 @@
       document.getElementById('diff-hard-btn').className = dim === 6 ? "px-2 py-0.5 rounded bg-green-600 text-white" : "px-2 py-0.5 rounded text-slate-400";
       initMemory();
     }
+
     function initMemory() {
       memoryMovesCount = 0; selectedMemoryCards = []; lockMemoryGrid = false;
       document.getElementById('moves-memory').innerText = memoryMovesCount;
       document.getElementById('msg-memory').classList.add('hidden');
-
       const totalItemsCount = (memoryDimensionSize * memoryDimensionSize) / 2;
       const slicedEmojisList = craftEmojisPool.slice(0, totalItemsCount);
       let pairedDeck = [...slicedEmojisList, ...slicedEmojisList];
@@ -857,11 +883,11 @@
       memoryDeck.forEach(card => {
         const cardNode = document.createElement('div'); cardNode.dataset.id = card.id; cardNode.onclick = () => triggerMemoryFlip(card.id);
         cardNode.className = "aspect-square flex items-center justify-center text-lg sm:text-xl rounded-lg border border-slate-800 cursor-pointer bg-emerald-800 text-transparent select-none";
+
         cardNode.innerText = "🟩"; container.appendChild(cardNode);
       });
     }
     function triggerMemoryFlip(cardId) {
-
       if(lockMemoryGrid) return; const card = memoryDeck[cardId]; if(card.flipped || card.solved) return;
       const cardElement = document.querySelector(`#grid-memory div[data-id='${cardId}']`);
       card.flipped = true; cardElement.innerText = card.symbol;
@@ -877,11 +903,11 @@
       if(c1.symbol === c2.symbol) {
         c1.solved = true; c2.solved = true;
         document.querySelector(`#grid-memory div[data-id='${c1.id}']`).classList.add('border-green-500/30');
+
         document.querySelector(`#grid-memory div[data-id='${c2.id}']`).classList.add('border-green-500/30');
         selectedMemoryCards = []; lockMemoryGrid = false; evaluateMemoryVictory();
       } else {
         setTimeout(() => {
-
           const el1 = document.querySelector(`#grid-memory div[data-id='${c1.id}']`);
           const el2 = document.querySelector(`#grid-memory div[data-id='${c2.id}']`);
           c1.flipped = false; c2.flipped = false;
@@ -898,33 +924,67 @@
     }
 
 
-    // ==========================================
-    // MODULE 5: SAFE VANILLA MARKDOWN SYNC FORUM
-    // ==========================================
 
-    let boardMessages = [];
-
+    // ==========================================
+    // MODULE 5: FIREBASE DRIVEN REALTIME GLOBAL FORUM ENGINE
+    // ==========================================
     function initBoardEngine() {
-      const savedStorageData = localStorage.getItem('maimod_synced_forum_v1');
-      if (savedStorageData) {
-        boardMessages = JSON.parse(savedStorageData);
-      } else {
-        boardMessages = [
-          { id: 101, user: "⚙️ System Staff", text: "# maimodserver 公式告知\nMod導入不要のバニラ型魔法サーバーへようこそ！\n- 接続アドレス: `katherine-tomtom.tun.ply.gg`\n- ルールを守って楽しくビルドしましょう！", time: "2026/10/19 12:00:00" },
-          { id: 102, user: "⛏️ MinePlayer", text: "掲示板の**マークダウンパース機能**めっちゃ綺麗。別タブで開くとリアルタイムに同期されますね！", time: "2026/10/19 14:22:15" }
-        ];
-        localStorage.setItem('maimod_synced_forum_v1', JSON.stringify(boardMessages));
+      // 過去に入力された保存済みのプレイヤー名があれば復元
+      const savedUsername = localStorage.getItem('maimod_username_v2');
+      if (savedUsername) {
+        document.getElementById('board-username').value = savedUsername;
       }
 
-      // Live cross-tab pipeline automatic synchronization via event hub
-      window.addEventListener('storage', function(event) {
-        if (event.key === 'maimod_synced_forum_v1' && event.newValue) {
-          boardMessages = JSON.parse(event.newValue);
-          if (currentActiveTab === 'board') renderBoardContent();
-
+      if (firebaseConfig.apiKey && !firebaseConfig.apiKey.startsWith("YOUR_FIREBASE")) {
+        try {
+          firebase.initializeApp(firebaseConfig);
+          db = firebase.firestore();
+          useFirebase = true;
+        } catch (e) {
+          console.error("Firebase初期化失敗。ローカルモードに移行します:", e);
         }
-      });
+      }
+
+
+      if (useFirebase) {
+        db.collection("maimod_messages").orderBy("timestamp", "asc").limit(50)
+          .onSnapshot((snapshot) => {
+            boardMessages = [];
+            snapshot.forEach((doc) => {
+              const data = doc.data();
+              boardMessages.push({
+                id: doc.id,
+                user: data.user,
+                text: data.text,
+                time: data.time || new Date(data.timestamp?.toDate()).toLocaleString()
+              });
+            });
+            if (currentActiveTab === 'board') renderBoardContent();
+          }, (error) => {
+            console.error("Firestore同期ストリームエラー:", error);
+          });
+      } else {
+        const savedStorageData = localStorage.getItem('maimod_synced_forum_v3');
+
+        if (savedStorageData) {
+          boardMessages = JSON.parse(savedStorageData);
+        } else {
+          boardMessages = [
+            { id: 101, user: "⚙️ System Staff", text: "# maimodserver 公式告知\nGitHub Pagesでの公開準備完了！このHTMLファイルをそのままプッシュすればサイトが公開されます。\n- 接続アドレス: `katherine-tomtom.tun.ply.gg`\n\n※名前入力欄を追加しました！お好きなハンドルネームを設定して投稿できます。入力した名前はブラウザに自動保存されます。", time: "2026/10/19 12:00:00" },
+            { id: 102, user: "⛏️ MinePlayer", text: "匿名から好きな名前に変えられるの便利！**マークダウン記法**のパースとも相性バッチリですね。", time: "2026/10/19 14:22:15" }
+          ];
+          localStorage.setItem('maimod_synced_forum_v3', JSON.stringify(boardMessages));
+        }
+
+        window.addEventListener('storage', function(event) {
+          if (event.key === 'maimod_synced_forum_v3' && event.newValue) {
+            boardMessages = JSON.parse(event.newValue);
+            if (currentActiveTab === 'board') renderBoardContent();
+          }
+        });
+      }
     }
+
 
     function renderBoardContent() {
       const container = document.getElementById('board-messages');
@@ -942,68 +1002,81 @@
         contentBox.className = "text-slate-200 leading-relaxed text-xs break-words pt-0.5 space-y-1";
         contentBox.innerHTML = customMarkdownParser(msg.text);
 
-
         itemNode.appendChild(metaBar);
         itemNode.appendChild(contentBox);
         container.appendChild(itemNode);
+
       });
 
       container.scrollTop = container.scrollHeight;
     }
 
     function postBoardMessage() {
+      const nameInputRef = document.getElementById('board-username');
       const inputRef = document.getElementById('board-input');
+      
+      let typedName = nameInputRef.value.trim();
       const textContext = inputRef.value.trim();
       if (!textContext) return;
 
-      const newPayload = {
-        id: Date.now() + Math.random(),
-        user: activeLang === 'ja' ? "匿名プレイヤー" : "Anonymous Miner",
-        text: textContext,
-        time: new Date().toLocaleString()
-      };
+      // 名前の入力がない場合の多言語デフォルトフォールバック
+      if (!typedName) {
+        typedName = activeLang === 'ja' ? "匿名プレイヤー" : "Anonymous Miner";
+      } else {
+        localStorage.setItem('maimod_username_v2', typedName); // 次回用に記憶
+      }
 
 
-      boardMessages.push(newPayload);
-      localStorage.setItem('maimod_synced_forum_v1', JSON.stringify(boardMessages));
-      inputRef.value = '';
-      renderBoardContent();
+      const timestampStr = new Date().toLocaleString();
+
+      if (useFirebase) {
+        db.collection("maimod_messages").add({
+          user: typedName,
+          text: textContext,
+          time: timestampStr,
+          timestamp: firebase.firestore.FieldValue.serverTimestamp()
+        }).then(() => {
+          inputRef.value = '';
+        }).catch((err) => {
+          console.error("Firestoreへの送信に失敗しました:", err);
+        });
+      } else {
+        const newPayload = {
+          id: Date.now() + Math.random(),
+          user: typedName,
+          text: textContext,
+          time: timestampStr
+
+        };
+        boardMessages.push(newPayload);
+        localStorage.setItem('maimod_synced_forum_v3', JSON.stringify(boardMessages));
+        inputRef.value = '';
+        renderBoardContent();
+      }
     }
 
-    // Regexp Parser Pipeline
     function customMarkdownParser(rawString) {
       let html = escapeHTML(rawString);
-
-      // 1. Headers matching pipeline (# Context)
       html = html.replace(/^#\s+(.+)$/gm, '<h4 class="text-sm font-bold text-yellow-400 mt-1 font-pixel">$1</h4>');
-      
-      // 2. Bold text matching pipeline (**text**)
       html = html.replace(/\*\*(.*?)\*\*/g, '<strong class="text-green-400 font-bold">$1</strong>');
-      
-      // 3. Inline monospace codes markers (`code`)
       html = html.replace(/`(.*?)`/g, '<code class="bg-slate-950 px-1 py-0.5 rounded text-pink-400 font-mono text-[10px]">$1</code>');
-      
-
-      // 4. Bullet lists elements (- list)
       html = html.replace(/^-\s+(.+)$/gm, '<div class="flex items-center space-x-1.5 pl-1"><span class="text-green-500 text-[10px]">■</span><span>$1</span></div>');
-
-      // 5. Normal linebreaks parsing
       return html.replace(/\n/g, '<br>');
     }
 
     function escapeHTML(str) {
       return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
     }
 
 
-    // --- GLOBAL HARDWARE KEYBOARD EVENT INTERFACING BRIDGE ---
+    // --- GLOBAL KEYBOARD EDGE CAPTURE HUB ---
     window.addEventListener('keydown', function(event) {
       if(currentActiveTab === 'game2048') {
         if(event.key === 'ArrowUp') move2048('up'); if(event.key === 'ArrowDown') move2048('down');
         if(event.key === 'ArrowLeft') move2048('left'); if(event.key === 'ArrowRight') move2048('right');
       }
       if(currentActiveTab === 'tetris') {
-
         if(event.key === 'ArrowLeft') handleTetrisControl('left'); if(event.key === 'ArrowRight') handleTetrisControl('right');
         if(event.key === 'ArrowDown') handleTetrisControl('down'); if(event.key === 'ArrowUp') handleTetrisControl('rotate');
         if(event.key === ' ') handleTetrisControl('drop');
@@ -1013,6 +1086,7 @@
         if(event.key === 'ArrowLeft') handleSnakeControl('left'); if(event.key === 'ArrowRight') handleSnakeControl('right');
       }
     });
+
 
   </script>
 </body>
