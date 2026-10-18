@@ -1,11 +1,11 @@
-# maimodserver紹介 ＆ 10x10多言語2048
+# maimodserver紹介 ＆ 絶妙難易度5x5多言語2048
 
 <!DOCTYPE html>
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>maimodserver & ポップ＆ファン 10x10 2048</title>
+    <title>maimodserver & ポップ＆ファン 5x5 2048</title>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -246,7 +246,7 @@
             margin-left: 8px;
         }
 
-        /* 10x10 Game Container Styles */
+        /* 5x5 Game Container Styles */
         .game-container {
             background: rgba(255, 255, 255, 0.85);
             padding: min(20px, 4vw);
@@ -301,7 +301,7 @@
 
         .score-box .value {
 
-            font-size: 14px;
+            font-size: 16px;
             font-weight: 700;
         }
 
@@ -361,24 +361,24 @@
         }
 
 
-        /* Fluid 10x10 Responsive Grid Layout */
+        /* Fluid 5x5 Responsive Grid Layout */
         .grid-container {
             width: 100%;
             aspect-ratio: 1 / 1;
             background: #bbaea0;
-            border-radius: 14px;
-            padding: min(6px, 1.5vw);
+            border-radius: 16px;
+            padding: min(8px, 2vw);
             position: relative;
             display: grid;
-            grid-template-columns: repeat(10, 1fr);
-            grid-template-rows: repeat(10, 1fr);
-            gap: min(4px, 1vw);
+            grid-template-columns: repeat(5, 1fr);
+            grid-template-rows: repeat(5, 1fr);
+            gap: min(6px, 1.5vw);
             touch-action: none;
         }
 
         .grid-cell {
             background: rgba(238, 228, 218, 0.35);
-            border-radius: min(4px, 1vw);
+            border-radius: min(8px, 1.5vw);
             width: 100%;
 
             height: 100%;
@@ -386,31 +386,31 @@
 
         .tile-container {
             position: absolute;
-            top: min(6px, 1.5vw);
-            left: min(6px, 1.5vw);
-            right: min(6px, 1.5vw);
-            bottom: min(6px, 1.5vw);
+            top: min(8px, 2vw);
+            left: min(8px, 2vw);
+            right: min(8px, 2vw);
+            bottom: min(8px, 2vw);
             pointer-events: none;
             display: grid;
-            grid-template-columns: repeat(10, 1fr);
-            grid-template-rows: repeat(10, 1fr);
-            gap: min(4px, 1vw);
+            grid-template-columns: repeat(5, 1fr);
+            grid-template-rows: repeat(5, 1fr);
+            gap: min(6px, 1.5vw);
         }
 
-        /* Container Query Fluid Text sizing to fit ANY screen size perfectly */
+        /* Container Query Fluid Text sizing to fit ANY screen size perfectly on 5x5 */
         .tile {
             width: 100%;
 
             height: 100%;
-            border-radius: min(4px, 1vw);
+            border-radius: min(8px, 1.5vw);
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             font-weight: 800;
-            font-size: min(14px, 3.2cqw);
+            font-size: min(24px, 6.5cqw);
             animation: appear 0.2s ease-in-out;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            box-shadow: 0 3px 6px rgba(0,0,0,0.08);
             text-align: center;
             overflow: hidden;
             word-break: break-all;
@@ -418,18 +418,18 @@
         }
 
         .tile.long-number {
-            font-size: min(10px, 2.3cqw);
+            font-size: min(16px, 4.5cqw);
         }
 
 
         .tile .emoji {
-            font-size: min(20px, 4.5cqw);
+            font-size: min(32px, 8.5cqw);
             line-height: 1;
         }
 
         .tile .label {
-            font-size: min(9px, 1.8cqw);
-            margin-top: 1px;
+            font-size: min(11px, 2.8cqw);
+            margin-top: 2px;
             font-weight: 600;
             opacity: 0.9;
             white-space: nowrap;
@@ -447,23 +447,23 @@
 
         @keyframes pop {
             0% { transform: scale(1); }
-            50% { transform: scale(1.1); }
+            50% { transform: scale(1.15); }
             100% { transform: scale(1); }
         }
 
-        /* 10x10 Custom Tile Colors */
+        /* 5x5 Custom Tile Colors */
         .tile-2 { background: #eee4da; color: #776e65; }
         .tile-4 { background: #ede0c8; color: #776e65; }
         .tile-8 { background: #f2b179; color: #f9f6f2; }
         .tile-16 { background: #f59563; color: #f9f6f2; }
         .tile-32 { background: #f67c5f; color: #f9f6f2; }
         .tile-64 { background: #f65e3b; color: #f9f6f2; }
-        .tile-128 { background: #edcf72; color: #f9f6f2; box-shadow: 0 0 5px rgba(237,207,114,0.5); }
-        .tile-256 { background: #edcc61; color: #f9f6f2; box-shadow: 0 0 6px rgba(237,204,97,0.6); }
-        .tile-512 { background: #edc850; color: #f9f6f2; box-shadow: 0 0 7px rgba(237,199,80,0.7); }
+        .tile-128 { background: #edcf72; color: #f9f6f2; box-shadow: 0 0 8px rgba(237,207,114,0.5); }
+        .tile-256 { background: #edcc61; color: #f9f6f2; box-shadow: 0 0 10px rgba(237,204,97,0.6); }
+        .tile-512 { background: #edc850; color: #f9f6f2; box-shadow: 0 0 12px rgba(237,199,80,0.7); }
 
-        .tile-1024 { background: #edc53f; color: #f9f6f2; box-shadow: 0 0 8px rgba(237,197,63,0.8); }
-        .tile-2048 { background: #edc22e; color: #f9f6f2; box-shadow: 0 0 12px rgba(237,194,46,0.9); }
+        .tile-1024 { background: #edc53f; color: #f9f6f2; box-shadow: 0 0 15px rgba(237,197,63,0.8); }
+        .tile-2048 { background: #edc22e; color: #f9f6f2; box-shadow: 0 0 20px rgba(237,194,46,0.9); }
         .tile-super { background: #3c3a32; color: #f9f6f2; }
 
         /* Animal Theme Colors */
@@ -472,7 +472,7 @@
         .theme-animal .tile-8 { background: #ffb5a7; color: #f77f00; }
         .theme-animal .tile-16 { background: #fcd5ce; color: #d90429; }
         .theme-animal .tile-32 { background: #f8ad9d; color: #6a040f; }
-        .theme-animal .tile-64 { background: #f4978e; color: #fff; }
+        .theme-animal .theme-animal .tile-64 { background: #f4978e; color: #fff; }
         .theme-animal .tile-128 { background: #e8c2ca; color: #fff; }
         .theme-animal .tile-256 { background: #b5e2fa; color: #0077b6; }
         .theme-animal .tile-512 { background: #90e0ef; color: #03045e; }
@@ -483,13 +483,13 @@
             position: absolute;
 
             top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(238, 228, 218, 0.9);
+            background: rgba(238, 228, 218, 0.92);
             z-index: 10;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            border-radius: 14px;
+            border-radius: 16px;
             display: none;
             padding: 10px;
         }
@@ -569,7 +569,7 @@
             🌐 <span class="lang-text lang-ja">サーバー紹介</span><span class="lang-text lang-en">Server Info</span>
         </button>
         <button class="tab-btn" id="tab-game" onclick="switchView('game')">
-            🕹️ <span class="lang-text lang-ja">10x10 ゲーム</span><span class="lang-text lang-en">10x10 Game</span>
+            🕹️ <span class="lang-text lang-ja">5x5 パズル</span><span class="lang-text lang-en">5x5 Puzzle</span>
         </button>
     </div>
 
@@ -677,12 +677,12 @@
         </div>
     </div>
 
-    <!-- 10x10 Game View -->
+    <!-- 5x5 Game View -->
     <div class="content-view" id="view-game">
         <div class="game-container">
             <div class="message-container" id="pop-message-container"></div>
             <header>
-                <h1>10x10 2048</h1>
+                <h1>5x5 2048</h1>
                 <div class="scores-container">
 
                     <div class="score-box">
@@ -708,11 +708,11 @@
                 </button>
             </div>
 
-            <!-- 10x10 Dynamic Grid Matrix -->
+            <!-- 5x5 Dynamic Grid Matrix -->
             <div class="grid-container" id="grid-container">
-                <!-- 100 Grid Cells -->
+                <!-- 25 Grid Cells -->
                 <script>
-                    for(let i=0; i<100; i++) {
+                    for(let i=0; i<25; i++) {
                         document.write('<div class="grid-cell"></div>');
                     }
                 </script>
@@ -732,8 +732,8 @@
             </div>
 
             <div class="instructions">
-                <span class="lang-text lang-ja">PCの方は <span>矢印キー</span>、スマホの方は <span>スワイプ</span> で広大な10x10グリッドの合体を楽しんでね！🐾</span>
-                <span class="lang-text lang-en">Use your <span>Arrow keys</span> or <span>Swipe</span> to merge tiles in this massive 10x10 board! 🐾</span>
+                <span class="lang-text lang-ja">PCの方は <span>矢印キー</span>、スマホの方は <span>スワイプ</span> で絶妙に詰みやすい5x5パズルを楽しんでね！🐾</span>
+                <span class="lang-text lang-en">Use your <span>Arrow keys</span> or <span>Swipe</span> to merge tiles in this strategic 5x5 board! 🐾</span>
             </div>
         </div>
     </div>
@@ -750,7 +750,7 @@
                 document.getElementById('view-game').classList.add('active');
                 document.getElementById('tab-game').classList.add('active');
                 if (window.gameInstance) {
-                    window.gameInstance.updateDOM(); // Refresh DOM spacing upon active layout trigger
+                    window.gameInstance.updateDOM();
                 }
             } else if (viewName === 'server') {
                 document.getElementById('view-server').classList.add('active');
@@ -769,19 +769,19 @@
             }
         }
 
-        // --- 10x10 2048 Game Logic Engine ---
+        // --- 5x5 2048 Game Logic Engine ---
         const ANIMAL_MAP = {
-            2: { emoji: '🐭', name: '🐭' },
-            4: { emoji: '🐰', name: '🐰' },
-            8: { emoji: '🦊', name: '🦊' },
-            16: { emoji: '🐷', name: '🐷' },
-            32: { emoji: '🐵', name: '🐵' },
-            64: { emoji: '🐼', name: '🐼' },
-            128: { emoji: '🦁', name: '🦁' },
-            256: { emoji: '🐯', name: '🐯' },
-            512: { emoji: '🐮', name: '🐮' },
-            1024: { emoji: '🦖', name: '🦖' },
-            2048: { emoji: '🦄', name: '🦄' }
+            2: { emoji: '🐭', name: 'ハムスター' },
+            4: { emoji: '🐰', name: 'ウサギ' },
+            8: { emoji: '🦊', name: 'キツネ' },
+            16: { emoji: '🐷', name: 'ブタ' },
+            32: { emoji: '🐵', name: 'サル' },
+            64: { emoji: '🐼', name: 'パンダ' },
+            128: { emoji: '🦁', name: 'ライオン' },
+            256: { emoji: '🐯', name: 'トラ' },
+            512: { emoji: '🐮', name: 'ウシ' },
+            1024: { emoji: '🦖', name: '恐竜' },
+            2048: { emoji: '🦄', name: 'ユニコーン' }
         };
 
 
@@ -789,7 +789,7 @@
 
         class Game2048 {
             constructor() {
-                this.size = 10;
+                this.size = 5; // Updated to 5x5 for optimal balanced difficulty
                 this.gridContainer = document.getElementById('grid-container');
                 this.tileContainer = document.getElementById('tile-container');
                 this.scoreDisplay = document.getElementById('score');
@@ -801,7 +801,7 @@
                 this.popMessageContainer = document.getElementById('pop-message-container');
 
                 this.score = 0;
-                this.bestScore = parseInt(localStorage.getItem('bestScore10x10_2048')) || 0;
+                this.bestScore = parseInt(localStorage.getItem('bestScore5x5_2048')) || 0;
                 this.grid = [];
                 this.theme = 'classic';
 
@@ -828,8 +828,7 @@
                 
                 this.grid = Array(this.size).fill(null).map(() => Array(this.size).fill(null));
 
-                this.addRandomTile();
-                this.addRandomTile();
+                // Balanced setup for 5x5
                 this.addRandomTile();
                 this.addRandomTile();
                 this.updateDOM();
@@ -844,8 +843,8 @@
                     switch(e.key) {
                         case 'ArrowUp':    moved = this.move(0); e.preventDefault(); break;
                         case 'ArrowRight': moved = this.move(1); e.preventDefault(); break;
-
                         case 'ArrowDown':  moved = this.move(2); e.preventDefault(); break;
+
                         case 'ArrowLeft':  moved = this.move(3); e.preventDefault(); break;
                     }
 
@@ -864,8 +863,8 @@
                 this.gridContainer.addEventListener('touchmove', (e) => {
                     if (document.getElementById('view-game').classList.contains('active')) {
                         e.preventDefault();
-
                     }
+
                 }, { passive: false });
 
                 this.gridContainer.addEventListener('touchend', (e) => {
@@ -884,8 +883,8 @@
                             moved = dy > 0 ? this.move(2) : this.move(0);
                         }
                         if (moved) this.afterMove();
-
                     }
+
                 }, { passive: true });
 
                 document.getElementById('restart-btn').addEventListener('click', () => this.initGame());
@@ -904,8 +903,8 @@
                     }
                     this.updateDOM();
                 });
-
             }
+
 
             addRandomTile() {
                 const emptyCells = [];
@@ -924,9 +923,9 @@
             }
 
             afterMove() {
-
                 this.addRandomTile();
                 this.updateDOM();
+
                 this.checkGameState();
             }
 
@@ -944,9 +943,9 @@
                 const rotateGrid = (times) => {
                     for (let t = 0; t < times; t++) {
                         let newGrid = Array(this.size).fill(null).map(() => Array(this.size).fill(null));
-
                         for (let r = 0; r < this.size; r++) {
                             for (let c = 0; c < this.size; c++) {
+
                                 newGrid[c][this.size - 1 - r] = this.grid[r][c];
                             }
                         }
@@ -964,9 +963,9 @@
 
                     for (let i = 0; i < row.length; i++) {
                         if (i + 1 < row.length && row[i].value === row[i+1].value) {
-
                             const newValue = row[i].value * 2;
                             newRow.push({ value: newValue, merged: true });
+
                             scoreGain += newValue;
                             hasCombo = true;
                             if (newValue === 2048 && !this.won) this.won = true;
@@ -985,8 +984,8 @@
                     this.grid[r] = newRow;
                 }
 
-
                 if (direction === 0) rotateGrid(1);
+
                 if (direction === 1) rotateGrid(2);
                 if (direction === 2) rotateGrid(3);
 
@@ -1003,7 +1002,7 @@
                 if (this.score > this.bestScore) {
                     this.bestScore = this.score;
                     this.bestScoreDisplay.textContent = this.bestScore;
-                    localStorage.setItem('bestScore10x10_2048', this.bestScore);
+                    localStorage.setItem('bestScore5x5_2048', this.bestScore);
                 }
 
 
@@ -1048,7 +1047,7 @@
                     document.getElementById('keep-playing-btn').style.display = 'inline-block';
 
                 } else {
-                    this.gameMessageText.textContent = currentLanguage === 'ja' ? 'Game Over 🐾' : 'Game Over 🐾';
+                    this.gameMessageText.textContent = currentLanguage === 'ja' ? 'Game Over 🐾\n（詰みました）' : 'Game Over 🐾\n(No Moves Left)';
                     this.gameMessageText.style.color = '#776e65';
                     document.getElementById('keep-playing-btn').style.display = 'none';
                 }
@@ -1070,7 +1069,7 @@
                             if (cell.value >= 100) tileElem.classList.add('long-number');
 
                             if (this.theme === 'animal') {
-                                const animalInfo = ANIMAL_MAP[cell.value] || { emoji: '👑', name: '👑' };
+                                const animalInfo = ANIMAL_MAP[cell.value] || { emoji: '👑', name: '伝説' };
                                 tileElem.innerHTML = `
                                     <span class="emoji">${animalInfo.emoji}</span>
                                     <span class="label">${animalInfo.name}</span>
