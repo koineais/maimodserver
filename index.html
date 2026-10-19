@@ -1,1094 +1,369 @@
-# maimodserver 名前設定機能付き・リアルタイム同期ポータル
+# maimodserver // 雷雨ノ調和案内盤
 
 <!DOCTYPE html>
-<html lang="ja" class="h-full w-full overflow-hidden">
+<html lang="ja">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>maimodserver Portal Hub</title>
-  
-  <!-- Tailwind CSS (Allowed Whitelist) -->
-  <script src="https://cdn.tailwindcss.com"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>雷雨公式案内盤</title>
+    <!-- 現代的な骨組み構築用（テイルウィンド） -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&display=swap');
+        
+        body {
+            font-family: 'Noto Sans JP', sans-serif;
+            background: linear-gradient(180deg, #090d16 0%, #02040a 100%);
+            color: #94a3b8;
+            position: relative;
+            overflow-x: hidden;
+            transition: background-color 0.1s ease;
+        }
 
-  <!-- Firebase Core & Firestore SDKs (Allowed Whitelist: gstatic.com) -->
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
 
-  <style>
-    @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=DotGothic16&display=swap');
-    
-    .font-pixel {
-      font-family: 'DotGothic16', 'Press Start 2P', monospace;
+        /* 雷光エフェクト用の画面発光定義 */
+        .lightning-flash {
+            background-color: #e2e8f0 !important;
+        }
 
-    }
-    
-    /* Hide scrollbars completely for forced screen-fit behavior */
-    .no-scrollbar::-webkit-scrollbar {
-      display: none;
-    }
-    .no-scrollbar {
-      -ms-overflow-style: none;
-      scrollbar-width: none;
-    }
+        /* 現代的な陰影と沈み込んだ暗色カード基調 */
+        .modern-shadow {
+            box-shadow: 0 20px 50px -12px rgba(0, 0, 0, 0.9);
+        }
+        .modern-card {
+            background-color: rgba(13, 18, 30, 0.85);
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            backdrop-filter: blur(12px);
+            transition: border 0.5s ease, box-shadow 0.5s ease;
+        }
+        .modern-card:hover {
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 25px 60px -10px rgba(0, 0, 0, 0.95);
+        }
 
-    /* Prevent selection and default drag web actions */
-    .select-none {
-      user-select: none;
-      -webkit-user-select: none;
-    }
+        
+        /* 荒天描画領域 */
+        #weather-canvas {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none;
+            z-index: 1;
+        }
+        
+        /* 表示切り替え用（アニメーション連動） */
+        .panel-hidden {
+            display: none !important;
+            opacity: 0;
+        }
+        .panel-visible {
+            animation: fadeIn 0.4s ease forwards;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(4px); }
 
-    .swipe-zone {
-      touch-action: none;
+            to { opacity: 1; transform: translateY(0); }
+        }
 
-    }
-
-    canvas {
-      image-rendering: pixelated;
-    }
-  </style>
+        /* ふわっと動くボタン効果 */
+        .interactive-btn {
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .interactive-btn:active {
+            transform: scale(0.97);
+        }
+    </style>
 </head>
-<body class="bg-slate-950 text-slate-100 font-sans h-full w-full flex flex-col select-none overflow-hidden antialiased">
+<body class="min-h-screen p-4 md:p-8 flex flex-col items-center justify-center antialiased">
 
-  <!-- TOP BAR: Static Height Header (52px) -->
-  <header class="bg-slate-900 border-b border-slate-800 shadow-md px-4 py-2.5 flex justify-between items-center h-[52px] flex-shrink-0 z-50">
-    <div class="flex items-center space-x-2">
-      <span class="text-xl">🟩</span>
-      <h1 class="text-lg font-bold font-pixel tracking-wider text-green-400">maimodserver</h1>
-    </div>
-    <div class="flex space-x-1 bg-slate-950 p-0.5 rounded-lg border border-slate-800">
-      <button id="btn-ja" onclick="switchLanguage('ja')" class="px-2.5 py-0.5 text-xs font-bold rounded transition-all bg-green-600 text-white">JA</button>
-      <button id="btn-en" onclick="switchLanguage('en')" class="px-2.5 py-0.5 text-xs font-bold rounded transition-all text-slate-400 hover:text-white">EN</button>
-    </div>
+    <!-- 豪雨・稲妻描画層 -->
+    <canvas id="weather-canvas"></canvas>
 
-  </header>
+    <!-- 全体格納容器 -->
+    <div class="w-full max-w-2xl modern-card rounded-3xl p-6 md:p-8 flex flex-col gap-6 modern-shadow relative z-10">
 
-  <!-- NAVIGATION TABS: Horizontal Scrollable Tab Bar (42px) -->
-  <nav class="bg-slate-900 px-2 border-b border-slate-800 overflow-x-auto no-scrollbar flex space-x-1 h-[42px] flex-shrink-0 z-40">
-    <button onclick="switchTab('intro')" id="tab-intro" class="tab-btn px-3 py-1.5 text-xs font-medium rounded-t-lg transition-all border-b-2 border-green-500 text-green-400 bg-slate-950 flex-shrink-0 flex items-center space-x-1">
-      <span>🌐</span> <span data-i18n="navIntro">サーバー紹介</span>
-    </button>
-    <button onclick="switchTab('game2048')" id="tab-game2048" class="tab-btn px-3 py-1.5 text-xs font-medium rounded-t-lg transition-all border-b-2 border-transparent text-slate-400 hover:text-slate-200 flex-shrink-0 flex items-center space-x-1">
-      <span>🔢</span> <span data-i18n="nav2048">5x5 2048</span>
-    </button>
-    <button onclick="switchTab('tetris')" id="tab-tetris" class="tab-btn px-3 py-1.5 text-xs font-medium rounded-t-lg transition-all border-b-2 border-transparent text-slate-400 hover:text-slate-200 flex-shrink-0 flex items-center space-x-1">
-      <span>🧱</span> <span data-i18n="navTetris">テトリス</span>
-    </button>
-    <button onclick="switchTab('snake')" id="tab-snake" class="tab-btn px-3 py-1.5 text-xs font-medium rounded-t-lg transition-all border-b-2 border-transparent text-slate-400 hover:text-slate-200 flex-shrink-0 flex items-center space-x-1">
-      <span>🐍</span> <span data-i18n="navSnake">スネーク</span>
-    </button>
-    <button onclick="switchTab('memory')" id="tab-memory" class="tab-btn px-3 py-1.5 text-xs font-medium rounded-t-lg transition-all border-b-2 border-transparent text-slate-400 hover:text-slate-200 flex-shrink-0 flex items-center space-x-1">
-      <span>🧠</span> <span data-i18n="navMemory">神経衰弱</span>
-    </button>
-
-    <button onclick="switchTab('board')" id="tab-board" class="tab-btn px-3 py-1.5 text-xs font-medium rounded-t-lg transition-all border-b-2 border-transparent text-slate-400 hover:text-slate-200 flex-shrink-0 flex items-center space-x-1">
-      <span>💬</span> <span data-i18n="navBoard">同期掲示板</span>
-    </button>
-  </nav>
-
-  <!-- MAIN VIEWPORT CONTAINER -->
-  <main class="flex-1 w-full max-w-4xl mx-auto p-3 flex flex-col overflow-hidden relative min-h-0">
-
-    <!-- 1. SERVER INTRO PAGE -->
-    <section id="content-intro" class="tab-content hidden h-full overflow-y-auto no-scrollbar space-y-4 pb-4 min-h-0">
-      <div class="bg-gradient-to-br from-slate-900 via-slate-900 to-green-950/40 border border-slate-800 rounded-xl p-5 shadow-xl relative overflow-hidden flex-shrink-0">
-        <div class="absolute top-0 right-0 transform translate-x-16 -translate-y-16 w-48 h-48 bg-green-500/10 rounded-full blur-3xl pointer-events-none"></div>
-        <div class="inline-block bg-green-900/40 border border-green-700/60 text-green-400 text-[10px] px-2.5 py-0.5 rounded-full font-pixel mb-2" data-i18n="heroBadge">Next-Gen Vanilla Evolution</div>
-        <h2 class="text-2xl font-bold font-pixel text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 via-amber-300 to-green-400 mb-2" data-i18n="introTitle">maimodserver 究極の冒険へ</h2>
-        <p class="text-slate-300 text-xs md:text-sm leading-relaxed mb-4" data-i18n="introSubtitle">
-          クライアントへのMod導入が一切不要（完全バニラ）でありながら、高度なサーバーサイドコマンドと独自の仕掛けによって、これまでにない未知の体験を引き出す次世代のマインクラフトサーバーです。
-        </p>
-        <div class="bg-slate-950/80 p-4 rounded-lg border border-slate-800 flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-2 sm:space-y-0 backdrop-blur-sm">
-          <div>
-
-            <span class="text-[10px] text-slate-500 block uppercase tracking-wider font-bold" data-i18n="serverAddrLabel">サーバーアドレス</span>
-            <span class="text-sm md:text-base font-mono text-green-300 font-bold select-all">katherine-tomtom.tun.ply.gg</span>
-          </div>
-          <button onclick="copyServerAddress()" id="copy-btn" class="bg-green-600 hover:bg-green-500 text-white font-bold py-2 px-4 rounded-md text-xs transition-all shadow-md flex items-center justify-center space-x-2 flex-shrink-0">
-            <span id="copy-btn-text" data-i18n="copyBtn">アドレスをコピー</span>
-          </button>
-        </div>
-      </div>
-
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-3 flex-shrink-0">
-        <div class="bg-slate-900 border border-slate-800 p-4 rounded-lg">
-          <div class="text-base mb-1">✨</div>
-          <h4 class="font-bold text-slate-100 text-xs mb-1" data-i18n="feat1Title">完全バニラで参加可能</h4>
-          <p class="text-[11px] text-slate-400 leading-normal" data-i18n="feat1Desc">面倒な外部Modの設定や重いカスタムランチャーの導入は100%不要。公式クライアントからそのまま接続可能です。</p>
-        </div>
-        <div class="bg-slate-900 border border-slate-800 p-4 rounded-lg">
-          <div class="text-base mb-1">🔮</div>
-          <h4 class="font-bold text-slate-100 text-xs mb-1" data-i18n="feat2Title">魔法のような独自ギミック</h4>
-          <p class="text-[11px] text-slate-400 leading-normal" data-i18n="feat2Desc">特殊コマンド群を極限までチューニング。バニラとは思えない特殊スキルや、不思議な便利ユーティリティが稼働中！</p>
-
-        </div>
-        <div class="bg-slate-900 border border-slate-800 p-4 rounded-lg">
-          <div class="text-base mb-1">⚔️</div>
-          <h4 class="font-bold text-slate-100 text-xs mb-1" data-i18n="feat3Title">広大なカスタムダンジョン</h4>
-          <p class="text-[11px] text-slate-400 leading-normal" data-i18n="feat3Desc">強力なボスが待ち受ける特製構造物。仲間と協力してギミックを解き明かす、RPGさながらのハラハラした攻略が楽しめます。</p>
-        </div>
-      </div>
-
-      <div class="bg-slate-900 border border-slate-800 rounded-lg p-4 space-y-2 flex-shrink-0">
-        <h3 class="text-sm font-bold font-pixel text-yellow-400 flex items-center space-x-2">🚀 <span data-i18n="sectionJoin">サーバーへの接続手順</span></h3>
-        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center text-[11px]">
-          <div class="bg-slate-950 p-2 rounded border border-slate-800/80">
-            <div class="font-bold text-green-500">01.ゲーム起動</div>
-            <p class="text-slate-400 text-[10px]">「マルチプレイ」を選択</p>
-          </div>
-          <div class="bg-slate-950 p-2 rounded border border-slate-800/80">
-            <div class="font-bold text-green-500">02.サーバー追加</div>
-            <p class="text-slate-400 text-[10px]">「サーバーを追加」をクリック</p>
-          </div>
-
-          <div class="bg-slate-950 p-2 rounded border border-slate-800/80">
-            <div class="font-bold text-green-500">03.アドレス入力</div>
-            <p class="text-slate-400 text-[10px]">上記アドレスをコピペ</p>
-          </div>
-          <div class="bg-slate-950 p-2 rounded border border-slate-800/80">
-            <div class="font-bold text-green-500">04.冒険開始！</div>
-            <p class="text-slate-400 text-[10px]">接続完了！世界を楽しもう</p>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- 2. 5x5 2048 GAME (IPAD SWIPE SUPPORT) -->
-    <section id="content-game2048" class="tab-content hidden h-full flex flex-col items-center justify-between overflow-hidden min-h-0">
-      <div class="w-full flex justify-between items-center max-w-xs flex-shrink-0">
-        <div>
-          <span class="text-[10px] text-slate-400 block" data-i18n="scoreLabel">スコア</span>
-          <span id="score-2048" class="text-base font-bold font-pixel text-yellow-400">0</span>
-        </div>
-
-        <div class="flex items-center space-x-2">
-          <div class="flex bg-slate-950 p-0.5 rounded border border-slate-800 text-[10px]">
-            <button id="theme-num-btn" onclick="set2048Theme('number')" class="px-2 py-0.5 rounded bg-blue-600 text-white" data-i18n="themeNumber">数字</button>
-            <button id="theme-ani-btn" onclick="set2048Theme('animal')" class="px-2 py-0.5 rounded text-slate-400" data-i18n="themeAnimal">どうぶつ</button>
-          </div>
-          <button onclick="init2048()" class="bg-slate-800 hover:bg-slate-700 text-[10px] font-bold py-0.5 px-2 rounded text-slate-200" data-i18n="restartBtn">リセット</button>
-        </div>
-      </div>
-
-      <div class="bg-slate-950 p-1.5 rounded-xl border-2 border-slate-800 w-full max-w-[280px] xs:max-w-[310px] sm:max-w-[330px] aspect-square grid grid-cols-5 gap-1 shadow-inner swipe-zone flex-shrink-0" id="grid-2048">
-        <!-- JS Grid Elements -->
-      </div>
-
-      <div class="text-[9px] text-slate-400 text-center select-none flex-shrink-0" data-i18n="support2048Hint">iPad/スマホ: 盤面をスワイプ！ / PC: 矢印キー</div>
-      <div id="msg-2048" class="hidden text-xs font-bold text-center text-red-400 bg-red-950/40 border border-red-900/60 p-1 rounded max-w-xs w-full flex-shrink-0"></div>
-
-      <div class="grid grid-cols-3 gap-1 w-28 flex-shrink-0 mb-1">
-        <div></div>
-        <button onclick="move2048('up')" class="w-8 h-8 bg-slate-800 active:bg-slate-700 rounded flex items-center justify-center font-bold border border-slate-700 text-sm">▲</button>
-
-        <div></div>
-        <button onclick="move2048('left')" class="w-8 h-8 bg-slate-800 active:bg-slate-700 rounded flex items-center justify-center font-bold border border-slate-700 text-sm">◀</button>
-        <div class="w-8 h-8 flex items-center justify-center text-[10px] text-slate-500 font-pixel">5x5</div>
-        <button onclick="move2048('right')" class="w-8 h-8 bg-slate-800 active:bg-slate-700 rounded flex items-center justify-center font-bold border border-slate-700 text-sm">▶</button>
-        <div></div>
-        <button onclick="move2048('down')" class="w-8 h-8 bg-slate-800 active:bg-slate-700 rounded flex items-center justify-center font-bold border border-slate-700 text-sm">▼</button>
-        <div></div>
-      </div>
-    </section>
-
-    <!-- 3. TETRIS GAME -->
-    <section id="content-tetris" class="tab-content hidden h-full flex flex-col md:flex-row items-center justify-center gap-3 overflow-hidden min-h-0">
-      <div class="relative bg-slate-950 p-1 rounded-xl border-2 border-slate-800 flex-shrink-0 flex items-center justify-center max-h-[60%] md:max-h-full">
-        <canvas id="tetris-canvas" width="240" height="480" class="bg-slate-950 rounded block h-[280px] xs:h-[320px] md:h-[380px] w-auto aspect-[1/2]"></canvas>
-        <div id="msg-tetris" class="absolute inset-0 bg-slate-950/90 rounded-xl flex flex-col items-center justify-center text-center hidden p-4">
-          <p class="text-base font-bold font-pixel text-red-500 mb-2" data-i18n="gameOver">ゲームオーバー！</p>
-          <button onclick="startTetris()" class="bg-green-600 hover:bg-green-500 text-white font-bold py-1.5 px-4 rounded text-xs" data-i18n="restartBtn">もう一度プレイ</button>
-        </div>
-      </div>
-
-
-      <div class="w-full max-w-[200px] flex flex-col items-center justify-center space-y-2 flex-shrink-0">
-        <div class="w-full bg-slate-950 p-2 rounded border border-slate-800 flex justify-between items-center">
-          <div>
-            <span class="text-[9px] text-slate-500 block uppercase font-bold" data-i18n="scoreLabel">スコア</span>
-            <span id="score-tetris" class="text-base font-bold font-pixel text-yellow-400">0</span>
-          </div>
-          <button onclick="startTetris()" class="bg-slate-800 hover:bg-slate-700 text-[9px] font-bold py-1 px-2 rounded text-slate-200" data-i18n="restartBtn">リセット</button>
-        </div>
-
-        <div class="w-full bg-slate-950 p-2 rounded border border-slate-800 flex flex-col items-center space-y-1">
-          <div class="grid grid-cols-3 gap-1.5 w-28">
-            <div></div>
-            <button onclick="handleTetrisControl('rotate')" class="w-8 h-8 bg-slate-800 active:bg-slate-700 rounded-full flex items-center justify-center border border-slate-700 text-xs text-blue-400">↻</button>
-            <div></div>
-            <button onclick="handleTetrisControl('left')" class="w-8 h-8 bg-slate-800 active:bg-slate-700 rounded-full flex items-center justify-center border border-slate-700 text-xs">◀</button>
-            <button onclick="handleTetrisControl('drop')" class="w-8 h-8 bg-blue-600 active:bg-blue-500 rounded-full flex items-center justify-center border border-blue-500 text-xs text-white">⚡</button>
-            <button onclick="handleTetrisControl('right')" class="w-8 h-8 bg-slate-800 active:bg-slate-700 rounded-full flex items-center justify-center border border-slate-700 text-xs">▶</button>
-            <div></div>
-            <button onclick="handleTetrisControl('down')" class="w-8 h-8 bg-slate-800 active:bg-slate-700 rounded-full flex items-center justify-center border border-slate-700 text-xs">▼</button>
-
-            <div></div>
-          </div>
-          <div class="text-[8px] text-slate-500 text-center select-none mt-0.5" data-i18n="tetrisHint">PC: 矢印キー（上=回転, スペース=落下）</div>
-        </div>
-      </div>
-    </section>
-
-    <!-- 4. RETRO SNAKE GAME -->
-    <section id="content-snake" class="tab-content hidden h-full flex flex-col items-center justify-between overflow-hidden min-h-0">
-      <div class="w-full max-w-[260px] flex justify-between items-center flex-shrink-0">
-        <div>
-          <span class="text-[10px] text-slate-400 block" data-i18n="scoreLabel">スコア</span>
-          <span id="score-snake" class="text-base font-bold font-pixel text-yellow-400">0</span>
-        </div>
-        <button onclick="startSnake()" class="bg-slate-800 hover:bg-slate-700 text-[10px] font-bold py-0.5 px-2 rounded text-slate-200" data-i18n="restartBtn">リセット</button>
-      </div>
-
-      <div class="relative bg-slate-950 p-1 rounded-xl border-2 border-slate-800 w-full max-w-[250px] xs:max-w-[280px] aspect-square shadow-inner flex justify-center items-center flex-shrink-0">
-        <canvas id="snake-canvas" width="400" height="400" class="bg-slate-950 rounded block w-full h-full"></canvas>
-
-        <div id="msg-snake" class="absolute inset-0 bg-slate-950/90 rounded-xl flex flex-col items-center justify-center text-center hidden p-4">
-          <p class="text-base font-bold font-pixel text-red-500 mb-2" data-i18n="gameOver">ゲームオーバー！</p>
-          <button onclick="startSnake()" class="bg-green-600 hover:bg-green-500 text-white font-bold py-1 px-4 rounded text-xs" data-i18n="restartBtn">もう一度プレイ</button>
-        </div>
-      </div>
-
-      <div class="grid grid-cols-3 gap-1 w-28 flex-shrink-0 mb-1">
-        <div></div>
-        <button onclick="handleSnakeControl('up')" class="w-8 h-8 bg-slate-800 active:bg-slate-700 rounded flex items-center justify-center font-bold border border-slate-700 text-sm">▲</button>
-        <div></div>
-        <button onclick="handleSnakeControl('left')" class="w-8 h-8 bg-slate-800 active:bg-slate-700 rounded flex items-center justify-center font-bold border border-slate-700 text-sm">◀</button>
-        <div class="w-8 h-8 flex items-center justify-center text-xs text-slate-600">🍎</div>
-        <button onclick="handleSnakeControl('right')" class="w-8 h-8 bg-slate-800 active:bg-slate-700 rounded flex items-center justify-center font-bold border border-slate-700 text-sm">▶</button>
-        <div></div>
-        <button onclick="handleSnakeControl('down')" class="w-8 h-8 bg-slate-800 active:bg-slate-700 rounded flex items-center justify-center font-bold border border-slate-700 text-sm">▼</button>
-        <div></div>
-      </div>
-    </section>
-
-
-    <!-- 5. CRAFT MEMORY GAME -->
-    <section id="content-memory" class="tab-content hidden h-full flex flex-col items-center justify-start space-y-2 overflow-hidden min-h-0">
-      <div class="w-full flex justify-between items-center max-w-sm flex-shrink-0">
-        <div>
-          <span class="text-[10px] text-slate-400 block" data-i18n="movesLabel">めくった回数</span>
-          <span id="moves-memory" class="text-base font-bold font-pixel text-yellow-400">0</span>
-        </div>
-        <div class="flex items-center space-x-2">
-          <div class="flex bg-slate-950 p-0.5 rounded border border-slate-800 text-[10px]">
-            <button id="diff-easy-btn" onclick="setMemoryDifficulty(4)" class="px-2 py-0.5 rounded bg-green-600 text-white">Easy (4x4)</button>
-            <button id="diff-hard-btn" onclick="setMemoryDifficulty(6)" class="px-2 py-0.5 rounded text-slate-400">Hard (6x6)</button>
-          </div>
-          <button onclick="initMemory()" class="bg-slate-800 hover:bg-slate-700 text-[10px] font-bold py-0.5 px-2 rounded text-slate-200" data-i18n="restartBtn">リセット</button>
-        </div>
-      </div>
-
-      <div id="grid-memory" class="bg-slate-950 p-2 rounded-xl border-2 border-slate-800 w-full max-w-[290px] xs:max-w-[320px] flex-1 grid gap-1 shadow-inner overflow-y-auto no-scrollbar min-h-0">
-        <!-- JS Grid Cards Injections -->
-      </div>
-
-      <div id="msg-memory" class="hidden text-xs font-bold text-center text-green-400 bg-green-950/40 border border-green-900/60 p-1 rounded max-w-sm w-full flex-shrink-0"></div>
-    </section>
-
-    <!-- 6. GLOBAL SYNC FORUM BOARD -->
-    <section id="content-board" class="tab-content hidden h-full flex flex-col justify-between overflow-hidden min-h-0">
-      <div class="bg-slate-900 border border-slate-800 p-2.5 rounded-xl mb-1.5 flex-shrink-0">
-        <h3 class="text-xs font-bold font-pixel text-green-400 flex items-center space-x-2" data-i18n="boardTitle">全員同期掲示板 (Markdown対応)</h3>
-        <p class="text-[10px] text-slate-400 mt-0.5 leading-normal" data-i18n="boardSubtitle">Firebaseを設定すると、GitHub Pages上から世界中全てのユーザー間で本物のリアルタイム書き込み同期が稼働します。</p>
-      </div>
-
-      <div id="board-messages" class="flex-1 bg-slate-950 border border-slate-800 rounded-xl p-3 overflow-y-auto space-y-2.5 no-scrollbar text-xs min-h-0">
-        <!-- Dynamic Posts Feed -->
-      </div>
-
-      <!-- User Post Form Area -->
-      <div class="mt-2 bg-slate-900 border border-slate-800 p-2 rounded-xl flex flex-col space-y-1.5 flex-shrink-0">
         
-        <!-- Editable Handle Name Wrapper Field -->
-        <div class="flex items-center space-x-2 px-1">
-
-          <span class="text-[10px] text-slate-400 font-pixel" data-i18n="nameLabel">名前:</span>
-          <input id="board-username" type="text" maxlength="15" class="bg-slate-950 text-slate-100 px-2 py-0.5 rounded border border-slate-800 text-xs focus:outline-none focus:border-green-500 w-36 font-pixel select-text" data-i18n-holder="namePlaceholder" placeholder="匿名プレイヤー">
+        <!-- 最上部・状況表示（外観変更項目は完全廃止） -->
+        <div class="flex items-center justify-between border-b border-white/5 pb-4">
+            <div class="flex items-center gap-2 text-xs tracking-wider text-slate-500 font-medium">
+                <span class="w-2 h-2 rounded-full bg-slate-600 animate-pulse"></span>
+                <span>【 接続先情報：埋戻サーバー 】</span>
+            </div>
+            <div class="text-right text-[10px] font-bold text-slate-500 tracking-widest">
+                気象設定：永続型雷雨環境
+            </div>
         </div>
 
-        <textarea id="board-input" rows="2" class="w-full bg-slate-950 text-slate-100 p-2 rounded border border-slate-800 text-xs focus:outline-none focus:border-green-500 placeholder-slate-600 no-scrollbar select-text" data-i18n-holder="boardPlaceholder" placeholder="メッセージを入力... (Markdown対応: **太字**, # 見出し, - リスト, `コード`)"></textarea>
-        <div class="flex justify-between items-center">
-          <div class="text-[8px] text-slate-500 font-mono tracking-tight">Markdown: # title | **bold** | - item | `code`</div>
-          <button onclick="postBoardMessage()" class="bg-green-600 hover:bg-green-500 active:scale-95 font-bold px-4 py-1 rounded text-xs text-white transition-all flex items-center space-x-1 flex-shrink-0">
-            <span>🚀</span> <span data-i18n="postBtn">投稿する</span>
-          </button>
+        <!-- 現代的・水平多点選択帯 -->
+        <div class="flex flex-wrap border-b border-white/5 text-xs md:text-sm font-medium">
+            <button id="btn-ov" onclick="modeSelect('ov')" class="flex-1 pb-3 text-center transition-all text-slate-400 border-b-2 border-slate-500 font-bold">概要</button>
+            <button id="btn-jn" onclick="modeSelect('jn')" class="flex-1 pb-3 text-center transition-all text-slate-600 border-b-2 border-transparent hover:text-slate-400">参加の手順</button>
+            <button id="btn-pl" onclick="modeSelect('pl')" class="flex-1 pb-3 text-center transition-all text-slate-600 border-b-2 border-transparent hover:text-slate-400">空間内名所</button>
+            <button id="btn-md" onclick="modeSelect('md')" class="flex-1 pb-3 text-center transition-all text-slate-600 border-b-2 border-transparent hover:text-slate-400">紹介映像</button>
+            <button id="btn-lw" onclick="modeSelect('lw')" class="flex-1 pb-3 text-center transition-all text-slate-600 border-b-2 border-transparent hover:text-slate-400">利用の規則</button>
+
         </div>
-      </div>
-    </section>
 
-  </main>
+        <!-- 各種情報提示盤 -->
+        
+        <!-- 1. 概要部 -->
+        <div id="node-ov" class="flex flex-col gap-4 panel-visible">
+            <div class="space-y-4">
+                <div class="text-xs font-bold text-slate-400 tracking-widest uppercase">// サーバー基本情報</div>
+                <div class="grid grid-cols-2 gap-3 text-xs">
+                    <div class="border border-white/5 bg-white/[0.01] p-3 rounded-2xl">
+                        <span class="block text-slate-600 text-[10px] mb-1">空間識別名</span>
+                        <span class="text-slate-200 font-bold text-sm tracking-wide">maimodserver</span>
+                    </div>
+                    <div class="border border-white/5 bg-white/[0.01] p-3 rounded-2xl">
+                        <span class="block text-slate-600 text-[10px] mb-1">動作設定</span>
+                        <span class="text-slate-200 font-bold text-sm">標準環境（改変なし）</span>
+                    </div>
+                </div>
+                <p class="text-xs leading-relaxed pt-1 text-slate-400">
 
-  <!-- APP FOOTER (28px) -->
-  <footer class="bg-slate-900 border-t border-slate-800 text-center py-1.5 text-[10px] text-slate-500 h-[28px] flex-shrink-0 flex items-center justify-center">
-    <p>&copy; 2026 maimodserver. Full Dynamic-Fit System.</p>
+                    当空間は、過度なシステム変更を施さない、マインクラフト本来の標準規則に準拠した複数人同時遊戯用ワールドです。参加にあたっての追加データ導入は一切不要であり、お持ちの端末からそのまま手軽に合流し、建築や生活の共有をお楽しみいただけます。
+                </p>
+            </div>
+            
+            <div class="border border-white/5 bg-white/[0.01] rounded-2xl p-4 flex justify-between items-center mt-2">
+                <div class="text-xs">
+                    <span class="block text-slate-600 text-[10px]">公式情報閲覧用回線</span>
+                    <span class="font-bold text-slate-300">外部公開案内板（公式ウェブサイト）</span>
+                </div>
+                <a href="https://maimodserver.1my.jp/" target="_blank" rel="noopener noreferrer" class="px-4 py-2 rounded-xl bg-slate-700 text-xs font-bold text-slate-200 hover:bg-slate-600 transition-all shadow-sm interactive-btn">
+                    移動する
+                </a>
+            </div>
+        </div>
 
-  </footer>
+        <!-- 2. 参加手順部 -->
+        <div id="node-jn" class="flex flex-col gap-4 panel-hidden">
+            <div class="space-y-3">
+                <div class="text-xs font-bold text-slate-400 tracking-widest uppercase mb-1">// 接続・合流の流れ</div>
 
-  <!-- CLIENT DATA & APPLICATION LOGIC ENGINE -->
-  <script>
-    // --- FIREBASE REALTIME GLOBAL SYNC CONFIGURATION ---
-    const firebaseConfig = {
-      apiKey: "YOUR_FIREBASE_API_KEY",
-      authDomain: "YOUR_FIREBASE_AUTH_DOMAIN",
-      projectId: "YOUR_FIREBASE_PROJECT_ID",
-      storageBucket: "YOUR_FIREBASE_STORAGE_BUCKET",
-      messagingSenderId: "YOUR_FIREBASE_MESSAGING_SENDER_ID",
-      appId: "YOUR_FIREBASE_APP_ID"
-    };
+                <div class="flex flex-col gap-2.5">
+                    <div class="flex gap-3 bg-white/[0.01] p-3.5 rounded-2xl border border-white/5 items-start">
+                        <span class="bg-slate-700 text-slate-200 rounded-lg text-[10px] font-bold px-2 py-0.5 mt-0.5">一</span>
+                        <p class="text-xs leading-relaxed text-slate-400">遊戯起動盤より、指定された標準構成（バニラ）を選択して起動します。</p>
+                    </div>
+                    <div class="flex gap-3 bg-white/[0.01] p-3.5 rounded-2xl border border-white/5 items-start">
+                        <span class="bg-slate-700 text-slate-200 rounded-lg text-[10px] font-bold px-2 py-0.5 mt-0.5">二</span>
+                        <p class="text-xs leading-relaxed text-slate-400">多人数遊戯項目（マルチプレイ）を選択し、「サーバーを追加」を実行します。</p>
+                    </div>
+                    <div class="flex gap-3 bg-white/[0.01] p-3.5 rounded-2xl border border-white/5 items-start">
+                        <span class="bg-slate-700 text-slate-200 rounded-lg text-[10px] font-bold px-2 py-0.5 mt-0.5">三</span>
+                        <p class="text-xs leading-relaxed text-slate-400">空間名称、および案内されている接続アドレスを正確に入力します。</p>
+                    </div>
+                    <div class="flex gap-3 bg-white/[0.01] p-3.5 rounded-2xl border border-white/5 items-start">
+                        <span class="bg-slate-700 text-slate-200 rounded-lg text-[10px] font-bold px-2 py-0.5 mt-0.5">四</span>
+                        <p class="text-xs leading-relaxed text-slate-400">登録された接続先を選択し、「サーバーに参加」をクリックして入場します。</p>
+                    </div>
+                </div>
+            </div>
 
-    let useFirebase = false;
-    let db = null;
+        </div>
 
-    const i18nDict = {
-      ja: {
+        <!-- 3. 空間内名所部 -->
+        <div id="node-pl" class="flex flex-col gap-4 panel-hidden">
+            <div class="space-y-3">
+                <div class="text-xs font-bold text-slate-400 tracking-widest uppercase mb-1">// 構築された主要施設</div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div class="p-4 rounded-2xl bg-white/[0.01] border border-white/5 space-y-1.5">
+                        <span class="text-xs font-bold text-slate-300 flex items-center gap-1">📍 中央広場（初期出現地）</span>
+                        <p class="text-[11px] leading-relaxed text-slate-500">全ての参加者が最初に降り立つ共有空間です。周辺案内板や備蓄箱が整備されています。</p>
+                    </div>
+                    <div class="p-4 rounded-2xl bg-white/[0.01] border border-white/5 space-y-1.5">
+                        <span class="text-xs font-bold text-slate-300 flex items-center gap-1">📍 共同取引所</span>
+                        <p class="text-[11px] leading-relaxed text-slate-500">村人との物資交換を効率的に行うための屋内集落です。書見台や各種作業台が集約されています。</p>
+                    </div>
+                    <div class="p-4 rounded-2xl bg-white/[0.01] border border-white/5 space-y-1.5">
+                        <span class="text-xs font-bold text-slate-300 flex items-center gap-1">📍 公共移動網（街道）</span>
+                        <p class="text-[11px] leading-relaxed text-slate-500">各参加者の拠点同士を迷わず安全に繋ぐため、照明が完備された舗装道路が敷設されています。</p>
+                    </div>
 
-        navIntro: "🌐 サーバー紹介",
-        nav2048: "🔢 5x5 2048",
-        navTetris: "🧱 テトリス",
-        navSnake: "🐍 スネーク",
-        navMemory: "🧠 神経衰弱",
-        navBoard: "💬 同期掲示板",
-        heroBadge: "次世代バニラ進化論",
-        introTitle: "maimodserver 究極の冒険へ",
-        introSubtitle: "クライアントへのMod導入が一切不要（完全バニラ）でありながら、高度なサーバーサイドコマンドと独自の仕掛けによって、これまでにない未知の体験を引き出す次世代のマインクラフトサーバーです。",
-        serverAddrLabel: "サーバーアドレス",
-        copyBtn: "アドレスをコピー",
-        copied: "コピーしました！",
-        sectionJoin: "サーバーへの接続手順",
-        scoreLabel: "スコア",
-        movesLabel: "めくった回数",
-        themeNumber: "数字",
-        themeAnimal: "どうぶつ",
-        restartBtn: "リセット",
-        gameOver: "ゲームオーバー！",
+                    <div class="p-4 rounded-2xl bg-white/[0.01] border border-white/5 space-y-1.5">
+                        <span class="text-xs font-bold text-slate-300 flex items-center gap-1">📍 資源採取場</span>
+                        <p class="text-[11px] leading-relaxed text-slate-500">建築用資材や鉱石を集めるための専用区画です。自然景観を損なわないよう地下深くへ伸びています。</p>
+                    </div>
+                </div>
+            </div>
+        </div>
 
-        tetrisHint: "PC: 矢印キー（上=回転, スペース=落下）",
-        win2048: "おめでとうございます！2048を達成しました！",
-        lose2048: "ゲームオーバー！動かせるマスがありません。",
-        winMemory: "クリア！すべてのペアを見つけました！ 🎉",
-        support2048Hint: "iPad/スマホ: 盤面をスワイプ！ / PC: 矢印キー",
-        boardTitle: "全員同期掲示板 (Markdown対応)",
-        boardSubtitle: "Firebaseを設定すると、GitHub Pages上から世界中全てのユーザー間で本物のリアルタイム書き込み同期が稼働します。",
-        boardPlaceholder: "メッセージを入力... (Markdown対応: **太字**, # 見出し, - リスト, `コード`)",
-        postBtn: "投稿する",
-        nameLabel: "名前:",
-        namePlaceholder: "匿名プレイヤー"
-      },
-      en: {
-        navIntro: "🌐 Info",
-        nav2048: "🔢 5x5 2048",
-        navTetris: "🧱 Tetris",
-        navSnake: "🐍 Snake",
-        navMemory: "🧠 Memory",
-        navBoard: "💬 Board",
+        <!-- 4. 紹介映像部 (YouTube) -->
+        <div id="node-md" class="flex flex-col gap-4 panel-hidden">
+            <div class="flex flex-col items-center">
+                <div class="w-full text-xs font-bold text-slate-400 tracking-widest uppercase mb-3 text-left">// 関連広報映像（主題歌）</div>
+                
+                <!-- YouTube 接続構造（指定テンプレートに準拠・雷雨トーン調整） -->
+                <a href="https://www.youtube.com/watch?v=Wv_eXZ4J104" target="_blank" rel="noopener noreferrer" class="w-full flex justify-center" style="position: relative; display: inline-block; max-width: 560px; text-decoration: none;">
+                    <img src="https://img.youtube.com/vi/Wv_eXZ4J104/hqdefault.jpg" alt="YouTube video preview" style="width: 100%; height: auto; border-radius: 16px; display: block; border: 1px solid rgba(255,255,255,0.05); box-shadow: 0 4px 20px rgba(0,0,0,0.5); opacity: 0.8;">
+                    <svg viewBox="0 0 68 48" aria-hidden="true" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 68px; height: 48px; pointer-events: none;">
+                        <path d="M66.52,7.74c-0.78-2.93-2.49-5.41-5.42-6.19C55.79,0.13,34,0,34,0S12.21,0.13,6.9,1.55 c-2.93,0.78-4.64,3.26-5.42,6.19C0.06,13.05,0,24,0,24s0.06,10.95,1.48,16.26c0.78,2.93,2.49,5.41,5.42,6.19 C12.21,47.87,34,48,34,48s21.79-0.13,27.1-1.55c2.93-0.78,4.64-3.26,5.42-6.19C67.94,34.95,68,24,68,24S67.94,13.05,66.52,7.74z" fill="#64748b" fill-opacity="0.9"></path>
+                        <path d="M 45,24 27,14 27,34" fill="#fff"></path>
 
-        heroBadge: "Next-Gen Vanilla Evolution",
-        introTitle: "Welcome to maimodserver",
-        introSubtitle: "No client mods required! A unique vanilla Minecraft server powered by advanced custom commands and mechanics providing a magical gameplay experience.",
-        serverAddrLabel: "SERVER ADDRESS",
-        copyBtn: "Copy Host",
-        copied: "Copied!",
-        sectionJoin: "How to Connect Step-by-Step",
-        scoreLabel: "SCORE",
-        movesLabel: "MOVES",
-        themeNumber: "Numbers",
-        themeAnimal: "Animals",
-        restartBtn: "Reset",
-        gameOver: "Game Over!",
-        tetrisHint: "PC: Arrow keys (Up=Rotate, Space=Drop)",
-        win2048: "Congratulations! You reached 2048!",
-        lose2048: "Game Over! No legal moves left.",
-        winMemory: "Success! You found all card pairs! 🎉",
-        support2048Hint: "iPad/Mobile: Swipe Grid View / PC: Arrows",
-        boardTitle: "Global Sync Forum (Markdown Enabled)",
+                    </svg>
+                </a>
+                
+                <div class="w-full text-center mt-3 font-medium text-xs text-slate-500">
+                    空間讃歌：「MAIMODSERVER 〜また次の未来へ〜」
+                </div>
+            </div>
+        </div>
 
-        boardSubtitle: "When Firebase is configured, true global cross-device synchronization will operate seamlessly on GitHub Pages.",
-        boardPlaceholder: "Enter markdown context text... (e.g. # Header, **bold**, - list, `code`)",
-        postBtn: "Post Msg",
-        nameLabel: "Name:",
-        namePlaceholder: "Anonymous Miner"
-      }
-    };
+        <!-- 5. 利用規則部 -->
+        <div id="node-lw" class="flex flex-col gap-4 panel-hidden">
+            <div class="space-y-3 text-xs">
+                <div class="text-xs font-bold text-slate-400 tracking-widest uppercase mb-1">// 共同遊戯における厳守事項</div>
+                <div class="border-l-4 border-slate-600 bg-white/[0.01] p-3.5 rounded-r-2xl font-medium text-slate-400 border border-white/5">
+                    ■ 他の参加者が作成した建造物の無断破壊、および共有財産の不正窃盗を完全に禁じます。
+                </div>
+                <div class="border-l-4 border-slate-600 bg-white/[0.01] p-3.5 rounded-r-2xl font-medium text-slate-400 border border-white/5">
+                    ■ 全体への高負荷を招く恐れのある、大規模な自動化機構の過度な設置を制限します。
+                </div>
 
-    let activeLang = 'ja';
-    let currentActiveTab = 'intro';
-    let boardMessages = [];
+                <div class="border-l-4 border-slate-600 bg-white/[0.01] p-3.5 rounded-r-2xl font-medium text-slate-400 border border-white/5">
+                    ■ 参加者同士の礼節を重んじ、円滑かつ健全な共同生活の維持に努めてください。
+                </div>
+            </div>
+        </div>
 
-    window.onload = function() {
-      switchLanguage('ja');
-      switchTab('intro');
-      setup2048TouchGestures();
-      initBoardEngine();
-      
-      window.addEventListener('keydown', function(e) {
+        <!-- 最下部・案内コンソール -->
+        <div class="text-[10px] text-slate-600 border-t border-white/5 pt-3 flex items-center gap-2 min-h-[24px]">
+            <span class="text-slate-500">●</span> 
+            <span id="console-msg" class="truncate font-medium tracking-wide">豪雨ならびに遠雷を検知。空間維持は正常です。</span>
+        </div>
 
-        if(["Space", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].indexOf(e.code) > -1) {
-          if (currentActiveTab !== 'intro' && currentActiveTab !== 'board') {
-            e.preventDefault();
-          }
+    </div>
+
+    <script>
+        // 激しい雷雨シミュレーションの実装
+        const canvas = document.getElementById('weather-canvas');
+        const ctx = canvas.getContext('2d');
+        const bodyEl = document.body;
+
+        
+        const maxDrops = 250; // 雨粒の量を大幅に増加（大雨）
+        const drops = [];
+
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
         }
-      }, false);
-    };
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        // 激しく激突する豪雨の初期配置
+        for (let i = 0; i < maxDrops; i++) {
+            drops.push({
+                x: Math.random() * canvas.width,
+                y: Math.random() * canvas.height,
+                l: Math.random() * 25 + 15, // 雨の筋を長く
+                v: Math.random() * 6 + 14,   // 落下速度を高速化
+                o: Math.random() * 0.2 + 0.1
 
-    function switchLanguage(langCode) {
-      activeLang = langCode;
-      document.querySelectorAll('[data-i18n]').forEach(element => {
-        const textKey = element.getAttribute('data-i18n');
-        if (i18nDict[langCode][textKey]) element.innerHTML = i18nDict[langCode][textKey];
-      });
-
-      document.querySelectorAll('[data-i18n-holder]').forEach(element => {
-        const placeholderKey = element.getAttribute('data-i18n-holder');
-        if (i18nDict[langCode][placeholderKey]) element.setAttribute('placeholder', i18nDict[langCode][placeholderKey]);
-      });
-
-
-      if(langCode === 'ja') {
-        document.getElementById('btn-ja').className = "px-2.5 py-0.5 text-xs font-bold rounded transition-all bg-green-600 text-white";
-        document.getElementById('btn-en').className = "px-2.5 py-0.5 text-xs font-bold rounded transition-all text-slate-400 hover:text-white";
-      } else {
-        document.getElementById('btn-en').className = "px-2.5 py-0.5 text-xs font-bold rounded transition-all bg-green-600 text-white";
-        document.getElementById('btn-ja').className = "px-2.5 py-0.5 text-xs font-bold rounded transition-all text-slate-400 hover:text-white";
-      }
-
-      if (currentActiveTab === 'game2048') render2048Board();
-      if (currentActiveTab === 'board') renderBoardContent();
-    }
-
-    function copyServerAddress() {
-      const serverStringStr = "katherine-tomtom.tun.ply.gg";
-      const dummyTextAreaNode = document.createElement("textarea");
-      dummyTextAreaNode.value = serverStringStr;
-      document.body.appendChild(dummyTextAreaNode);
-      dummyTextAreaNode.select();
-      document.execCommand("copy");
-
-      document.body.removeChild(dummyTextAreaNode);
-
-      const copyBtnTxt = document.getElementById('copy-btn-text');
-      copyBtnTxt.innerText = i18nDict[activeLang]['copied'];
-      setTimeout(() => { copyBtnTxt.innerText = i18nDict[activeLang]['copyBtn']; }, 1800);
-    }
-
-    function switchTab(targetTabId) {
-      currentActiveTab = targetTabId;
-      stopTetrisLoop();
-      stopSnakeLoop();
-
-      document.querySelectorAll('.tab-content').forEach(section => {
-        section.classList.add('hidden');
-        section.classList.remove('flex', 'block');
-      });
-
-      const activeSection = document.getElementById(`content-${targetTabId}`);
-      activeSection.classList.remove('hidden');
-
-      if (targetTabId === 'intro') activeSection.classList.add('block');
-      else activeSection.classList.add('flex');
-
-      document.querySelectorAll('.tab-btn').forEach(btn => {
-        btn.classList.remove('border-green-500', 'text-green-400', 'bg-slate-950');
-        btn.classList.add('border-transparent', 'text-slate-400');
-      });
-
-      const activeNavTabElement = document.getElementById(`tab-${targetTabId}`);
-      activeNavTabElement.classList.remove('border-transparent', 'text-slate-400');
-      activeNavTabElement.classList.add('border-green-500', 'text-green-400', 'bg-slate-950');
-
-      if(targetTabId === 'game2048') init2048();
-      if(targetTabId === 'tetris') startTetris();
-      if(targetTabId === 'snake') startSnake();
-      if(targetTabId === 'memory') initMemory();
-      if(targetTabId === 'board') renderBoardContent();
-    }
-
-
-
-    // ==========================================
-    // MODULE 1: 5x5 2048 PUZZLE ENGINE
-    // ==========================================
-    let board2048 = [];
-    let score248Val = 0;
-    let theme2048Mode = 'number';
-
-    const animalMap = {
-      2: "🐣", 4: "🐥", 8: "🐓", 16: "🦉", 32: "🦆", 64: "🐧",
-      128: "🐇", 256: "🦊", 512: "🐺", 1024: "🦁", 2048: "🐉", 4096: "🦄"
-    };
-
-    const tileBgColors = {
-      0: "bg-slate-900/60",
-      2: "bg-amber-100 text-slate-900",
-      4: "bg-amber-200 text-slate-900",
-      8: "bg-orange-300 text-slate-900",
-      16: "bg-orange-400 text-white",
-      32: "bg-red-400 text-white",
-
-      64: "bg-red-500 text-white",
-      128: "bg-yellow-300 text-slate-950 shadow-md",
-      256: "bg-yellow-400 text-slate-950 shadow-md",
-      512: "bg-green-400 text-slate-950 shadow-md",
-      1024: "bg-purple-500 text-white shadow-lg",
-      2048: "bg-indigo-600 text-white shadow-xl animate-pulse"
-    };
-
-    function set2048Theme(themeType) {
-      theme2048Mode = themeType;
-      document.getElementById('theme-num-btn').className = themeType === 'number' ? "px-2 py-0.5 rounded bg-blue-600 text-white" : "px-2 py-0.5 rounded text-slate-400";
-      document.getElementById('theme-ani-btn').className = themeType === 'animal' ? "px-2 py-0.5 rounded bg-blue-600 text-white" : "px-2 py-0.5 rounded text-slate-400";
-      render2048Board();
-    }
-
-    function init2048() {
-      board2048 = Array(25).fill(0);
-      score248Val = 0;
-      document.getElementById('score-2048').innerText = score248Val;
-
-      document.getElementById('msg-2048').classList.add('hidden');
-      spawn2048Tile(); spawn2048Tile();
-      render2048Board();
-    }
-
-    function spawn2048Tile() {
-      let emptyCells = [];
-      board2048.forEach((val, idx) => { if(val === 0) emptyCells.push(idx); });
-      if(emptyCells.length > 0) {
-        let randIdx = emptyCells[Math.floor(Math.random() * emptyCells.length)];
-        board2048[randIdx] = Math.random() < 0.9 ? 2 : 4;
-      }
-    }
-
-    function render2048Board() {
-      const container = document.getElementById('grid-2048');
-      container.innerHTML = '';
-      board2048.forEach(value => {
-        const cell = document.createElement('div');
-
-        cell.className = `flex flex-col items-center justify-center font-pixel rounded text-xs sm:text-sm font-bold aspect-square select-none ${tileBgColors[value] || 'bg-purple-700 text-white'}`;
-        if(value > 0) {
-          cell.innerText = theme2048Mode === 'animal' ? (animalMap[value] || "👾") : value;
-        } else {
-          cell.innerText = '';
-        }
-        container.appendChild(cell);
-      });
-    }
-
-    let t2048StartX = 0; let t2048StartY = 0;
-    function setup2048TouchGestures() {
-      const targetArea = document.getElementById('grid-2048');
-      targetArea.addEventListener('touchstart', function(e) {
-        t2048StartX = e.changedTouches[0].screenX; t2048StartY = e.changedTouches[0].screenY;
-      }, { passive: true });
-      targetArea.addEventListener('touchend', function(e) {
-        let dx = e.changedTouches[0].screenX - t2048StartX;
-        let dy = e.changedTouches[0].screenY - t2048StartY;
-
-        let absDx = Math.abs(dx); let absDy = Math.abs(dy);
-        if (Math.max(absDx, absDy) > 25) {
-          if (absDx > absDy) { if (dx > 0) move2048('right'); else move2048('left'); }
-          else { if (dy > 0) move2048('down'); else move2048('up'); }
-        }
-      }, { passive: true });
-    }
-
-    function move2048(direction) {
-      let treats = false;
-      if (direction === 'left') {
-        let res = slide2048Left(board2048); board2048 = res.board; treats = res.moved;
-      } else if (direction === 'right') {
-        let flipped = reverse5x5(board2048); let res = slide2048Left(flipped); board2048 = reverse5x5(res.board); treats = res.moved;
-      } else if (direction === 'up') {
-        let transposed = transpose5x5(board2048); let res = slide2048Left(transposed); board2048 = transpose5x5(res.board); treats = res.moved;
-      } else if (direction === 'down') {
-        let transposed = transpose5x5(board2048); let flipped = reverse5x5(transposed); let res = slide2048Left(flipped);
-        let unflipped = reverse5x5(res.board); board2048 = transpose5x5(unflipped); treats = res.moved;
-
-      }
-      if(treats) {
-        spawn2048Tile(); render2048Board();
-        document.getElementById('score-2048').innerText = score248Val;
-        check2048GameOver();
-      }
-    }
-
-    function slide2048Left(inputBoard) {
-      let freshBoard = []; let moved = false;
-      for(let i=0; i<5; i++) {
-        let row = inputBoard.slice(i*5, i*5 + 5);
-        let filteredRow = row.filter(v => v !== 0);
-        let combinedRow = [];
-        for(let j=0; j<filteredRow.length; j++) {
-          if(filteredRow[j] === filteredRow[j+1] && j < filteredRow.length - 1) {
-            let combinedVal = filteredRow[j] * 2; combinedRow.push(combinedVal);
-            score248Val += combinedVal; j++; moved = true;
-          } else { combinedRow.push(filteredRow[j]); }
-
-        }
-        while(combinedRow.length < 5) combinedRow.push(0);
-        for(let k=0; k<5; k++) { if(row[k] !== combinedRow[k]) moved = true; }
-        freshBoard = freshBoard.concat(combinedRow);
-      }
-      return { board: freshBoard, moved: moved };
-    }
-
-    function transpose5x5(b) {
-      let out = Array(25).fill(0);
-      for(let r=0; r<5; r++) { for(let c=0; c<5; c++) out[c*5 + r] = b[r*5 + c]; }
-      return out;
-    }
-
-    function reverse5x5(b) {
-      let out = [];
-      for(let i=0; i<5; i++) out = out.concat(b.slice(i*5, i*5 + 5).reverse());
-      return out;
-    }
-
-
-    function check2048GameOver() {
-      if(board2048.includes(2048)) {
-        const msg = document.getElementById('msg-2048');
-        msg.innerText = i18nDict[activeLang]['win2048'];
-        msg.classList.remove('hidden', 'text-red-400'); msg.classList.add('text-green-400'); return;
-      }
-      if(!board2048.includes(0)) {
-        let movesLeft = false;
-        for(let r=0; r<5; r++) {
-          for(let c=0; c<5; c++) {
-            let current = board2048[r*5 + c];
-            if(c < 4 && current === board2048[r*5 + c + 1]) movesLeft = true;
-            if(r < 4 && current === board2048[(r+1)*5 + c]) movesLeft = true;
-          }
-        }
-        if(!movesLeft) {
-          const msg = document.getElementById('msg-2048');
-          msg.innerText = i18nDict[activeLang]['lose2048'];
-          msg.classList.remove('hidden', 'text-green-400'); msg.classList.add('text-red-400');
-
-        }
-      }
-    }
-
-
-    // ==========================================
-    // MODULE 2: TETRIS MOBILE MOTOR ENGINE
-    // ==========================================
-    const tetrisCanvas = document.getElementById('tetris-canvas');
-    const tetrisCtx = tetrisCanvas.getContext('2d');
-    let tetrisScore = 0; let tetrisGrid = []; let currentPiece = null; let tetrisTimer = null;
-    const blockScaleSize = 24;
-
-    const tetrisBlocksDict = {
-      'I': [[1,1,1,1]], 'O': [[2,2],[2,2]], 'T': [[0,3,0],[3,3,3]], 'S': [[0,4,4],[4,4,0]],
-      'Z': [[5,5,0],[0,5,5]], 'J': [[6,0,0],[6,6,6]], 'L': [[0,0,7],[7,7,7]]
-    };
-    const blockColorsDict = ['#0f172a', '#22d3ee', '#facc15', '#a855f7', '#22c55e', '#ef4444', '#3b82f6', '#f97316'];
-
-
-    function createTetrisGrid() {
-      let grid = []; for(let r=0; r<20; r++) grid.push(Array(10).fill(0)); return grid;
-    }
-    function generateRandomPiece() {
-      const pieceKeys = ['I','O','T','S','Z','J','L'];
-      const pickKey = pieceKeys[Math.floor(Math.random() * pieceKeys.length)];
-      const matrix = tetrisBlocksDict[pickKey];
-      return { matrix: matrix, x: Math.floor((10 - matrix[0].length) / 2), y: 0 };
-    }
-    function startTetris() {
-      stopTetrisLoop(); tetrisGrid = createTetrisGrid(); tetrisScore = 0;
-      document.getElementById('score-tetris').innerText = tetrisScore;
-      document.getElementById('msg-tetris').classList.add('hidden');
-      currentPiece = generateRandomPiece(); drawTetrisScreen();
-      tetrisTimer = setInterval(updateTetrisTick, 1000);
-    }
-    function stopTetrisLoop() { if(tetrisTimer) { clearInterval(tetrisTimer); tetrisTimer = null; } }
-
-    function updateTetrisTick() {
-
-      currentPiece.y++;
-      if(detectTetrisCollision()) {
-        currentPiece.y--; lockTetrisPiece(); clearTetrisRows(); currentPiece = generateRandomPiece();
-        if(detectTetrisCollision()) { document.getElementById('msg-tetris').classList.remove('hidden'); stopTetrisLoop(); }
-      }
-      drawTetrisScreen();
-    }
-
-    function detectTetrisCollision() {
-      const m = currentPiece.matrix;
-      for(let r=0; r<m.length; r++) {
-        for(let c=0; c<m[r].length; c++) {
-          if(m[r][c] !== 0) {
-            let nextX = currentPiece.x + c; let nextY = currentPiece.y + r;
-            if(nextX < 0 || nextX >= 10 || nextY >= 20) return true;
-            if(nextY >= 0 && tetrisGrid[nextY][nextX] !== 0) return true;
-          }
-        }
-      }
-
-      return false;
-    }
-
-    function lockTetrisPiece() {
-      const m = currentPiece.matrix;
-      for(let r=0; r<m.length; r++) {
-        for(let c=0; c<m[r].length; c++) {
-          if(m[r][c] !== 0 && currentPiece.y + r >= 0) tetrisGrid[currentPiece.y + r][currentPiece.x + c] = m[r][c];
-        }
-      }
-    }
-
-    function clearTetrisRows() {
-      let linesCount = 0;
-      for(let r = tetrisGrid.length - 1; r >= 0; r--) {
-        if(!tetrisGrid[r].includes(0)) { tetrisGrid.splice(r, 1); tetrisGrid.unshift(Array(10).fill(0)); linesCount++; r++; }
-      }
-      if(linesCount > 0) {
-        tetrisScore += [0, 100, 300, 500, 800][linesCount] || 1000;
-
-        document.getElementById('score-tetris').innerText = tetrisScore;
-      }
-    }
-
-    function drawTetrisScreen() {
-      tetrisCtx.fillStyle = '#020617'; tetrisCtx.fillRect(0, 0, tetrisCanvas.width, tetrisCanvas.height);
-      for(let r=0; r<20; r++) {
-        for(let c=0; c<10; c++) { if(tetrisGrid[r][c] !== 0) drawTetrisBlock(c, r, blockColorsDict[tetrisGrid[r][c]]); }
-      }
-      if(currentPiece) {
-        const m = currentPiece.matrix;
-        for(let r=0; r<m.length; r++) {
-          for(let c=0; c<m[r].length; c++) { if(m[r][c] !== 0) drawTetrisBlock(currentPiece.x + c, currentPiece.y + r, blockColorsDict[m[r][c]]); }
-        }
-      }
-    }
-
-    function drawTetrisBlock(x, y, colorHex) {
-      tetrisCtx.fillStyle = colorHex; tetrisCtx.fillRect(x*blockScaleSize, y*blockScaleSize, blockScaleSize-1, blockScaleSize-1);
-
-    }
-
-    function handleTetrisControl(action) {
-      if(!currentPiece || !tetrisTimer) return;
-      if(action === 'left') { currentPiece.x--; if(detectTetrisCollision()) currentPiece.x++; }
-      else if(action === 'right') { currentPiece.x++; if(detectTetrisCollision()) currentPiece.x--; }
-      else if(action === 'down') { currentPiece.y++; if(detectTetrisCollision()) currentPiece.y--; }
-      else if(action === 'rotate') {
-        const prevMatrix = currentPiece.matrix;
-        let nMatrix = Array(prevMatrix[0].length).fill(0).map(() => Array(prevMatrix.length).fill(0));
-        for(let r=0; r<prevMatrix.length; r++) {
-          for(let c=0; c<prevMatrix[r].length; c++) nMatrix[c][prevMatrix.length - 1 - r] = prevMatrix[r][c];
-        }
-        currentPiece.matrix = nMatrix; if(detectTetrisCollision()) currentPiece.matrix = prevMatrix;
-      } else if(action === 'drop') {
-        while(!detectTetrisCollision()) { currentPiece.y++; }
-        currentPiece.y--; lockTetrisPiece(); clearTetrisRows(); currentPiece = generateRandomPiece();
-        if(detectTetrisCollision()) { document.getElementById('msg-tetris').classList.remove('hidden'); stopTetrisLoop(); }
-      }
-
-      drawTetrisScreen();
-    }
-
-
-    // ==========================================
-    // MODULE 3: RETRO SNAKE CORE SIMULATION
-    // ==========================================
-    const snakeCanvas = document.getElementById('snake-canvas');
-    const snakeCtx = snakeCanvas.getContext('2d');
-    let snakeScore = 0; let snakeArr = []; let snakeDir = { x: 1, y: 0 }; let bufferedDir = { x: 1, y: 0 }; let snakeFoodPos = { x: 0, y: 0 }; let snakeTimer = null;
-    const gridMapUnits = 20;
-
-    function startSnake() {
-      stopSnakeLoop(); snakeScore = 0;
-      document.getElementById('score-snake').innerText = snakeScore;
-      document.getElementById('msg-snake').classList.add('hidden');
-      snakeArr = [{ x: 10, y: 10 }, { x: 9, y: 10 }, { x: 8, y: 10 }];
-      snakeDir = { x: 1, y: 0 }; bufferedDir = { x: 1, y: 0 };
-      spawnSnakeFood(); drawSnakeFrame(); snakeTimer = setInterval(updateSnakeTick, 130);
-
-    }
-    function stopSnakeLoop() { if(snakeTimer) { clearInterval(snakeTimer); snakeTimer = null; } }
-
-    function spawnSnakeFood() {
-      let clean = false;
-      while(!clean) {
-        snakeFoodPos = { x: Math.floor(Math.random() * gridMapUnits), y: Math.floor(Math.random() * gridMapUnits) };
-        clean = true; for(let seg of snakeArr) { if(seg.x === snakeFoodPos.x && seg.y === snakeFoodPos.y) clean = false; }
-      }
-    }
-
-    function updateSnakeTick() {
-      textDir = bufferedDir; snakeDir = textDir;
-      const head = { x: snakeArr[0].x + snakeDir.x, y: snakeArr[0].y + snakeDir.y };
-      if(head.x < 0 || head.x >= gridMapUnits || head.y < 0 || head.y >= gridMapUnits) { triggerSnakeGameOver(); return; }
-      for(let seg of snakeArr) { if(seg.x === head.x && seg.y === head.y) { triggerSnakeGameOver(); return; } }
-
-      snakeArr.unshift(head);
-      if(head.x === snakeFoodPos.x && head.y === snakeFoodPos.y) {
-
-        snakeScore += 10; document.getElementById('score-snake').innerText = snakeScore; spawnSnakeFood();
-      } else { snakeArr.pop(); }
-      drawSnakeFrame();
-    }
-    function triggerSnakeGameOver() { document.getElementById('msg-snake').classList.remove('hidden'); stopSnakeLoop(); }
-
-    function drawSnakeFrame() {
-      const uSize = snakeCanvas.width / gridMapUnits;
-      snakeCtx.fillStyle = '#020617'; snakeCtx.fillRect(0, 0, snakeCanvas.width, snakeCanvas.height);
-      snakeCtx.fillStyle = '#ef4444'; snakeCtx.beginPath();
-      let cx = snakeFoodPos.x * uSize + uSize/2; let cy = snakeFoodPos.y * uSize + uSize/2;
-      snakeCtx.arc(cx, cy, uSize/2.3, 0, 2*Math.PI); snakeCtx.fill();
-
-      snakeArr.forEach((segment, index) => {
-        snakeCtx.fillStyle = index === 0 ? '#4ade80' : '#22c55e';
-        snakeCtx.fillRect(segment.x * uSize + 1, segment.y * uSize + 1, uSize - 2, uSize - 2);
-      });
-    }
-    function handleSnakeControl(dirCmd) {
-
-      if(dirCmd === 'up' && snakeDir.y === 0) bufferedDir = { x: 0, y: -1 };
-      if(dirCmd === 'down' && snakeDir.y === 0) bufferedDir = { x: 0, y: 1 };
-      if(dirCmd === 'left' && snakeDir.x === 0) bufferedDir = { x: -1, y: 0 };
-      if(dirCmd === 'right' && snakeDir.x === 0) bufferedDir = { x: 1, y: 0 };
-    }
-
-
-    // ==========================================
-    // MODULE 4: CRAFT MEMORY PUZZLE MATRIX
-    // ==========================================
-    let memoryDeck = []; let memoryMovesCount = 0; let selectedMemoryCards = []; let lockMemoryGrid = false; let memoryDimensionSize = 4;
-    const craftEmojisPool = ["⛏️", "📦", "⚔️", "🍖", "💎", "🧱", "🌲", "🍎", "🏹", "🌋", "🧟", "💀", "🐷", "🐮", "🐑", "🐔", "🧭", "🎣"];
-
-    function setMemoryDifficulty(dim) {
-      memoryDimensionSize = dim;
-      document.getElementById('diff-easy-btn').className = dim === 4 ? "px-2 py-0.5 rounded bg-green-600 text-white" : "px-2 py-0.5 rounded text-slate-400";
-      document.getElementById('diff-hard-btn').className = dim === 6 ? "px-2 py-0.5 rounded bg-green-600 text-white" : "px-2 py-0.5 rounded text-slate-400";
-      initMemory();
-    }
-
-    function initMemory() {
-      memoryMovesCount = 0; selectedMemoryCards = []; lockMemoryGrid = false;
-      document.getElementById('moves-memory').innerText = memoryMovesCount;
-      document.getElementById('msg-memory').classList.add('hidden');
-      const totalItemsCount = (memoryDimensionSize * memoryDimensionSize) / 2;
-      const slicedEmojisList = craftEmojisPool.slice(0, totalItemsCount);
-      let pairedDeck = [...slicedEmojisList, ...slicedEmojisList];
-      for (let i = pairedDeck.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1)); [pairedDeck[i], pairedDeck[j]] = [pairedDeck[j], pairedDeck[i]];
-      }
-      memoryDeck = pairedDeck.map((val, idx) => ({ id: idx, symbol: val, flipped: false, solved: false }));
-      buildMemoryGridUI();
-    }
-    function buildMemoryGridUI() {
-      const container = document.getElementById('grid-memory'); container.innerHTML = '';
-      container.style.gridTemplateColumns = `repeat(${memoryDimensionSize}, minmax(0, 1fr))`;
-      memoryDeck.forEach(card => {
-        const cardNode = document.createElement('div'); cardNode.dataset.id = card.id; cardNode.onclick = () => triggerMemoryFlip(card.id);
-        cardNode.className = "aspect-square flex items-center justify-center text-lg sm:text-xl rounded-lg border border-slate-800 cursor-pointer bg-emerald-800 text-transparent select-none";
-
-        cardNode.innerText = "🟩"; container.appendChild(cardNode);
-      });
-    }
-    function triggerMemoryFlip(cardId) {
-      if(lockMemoryGrid) return; const card = memoryDeck[cardId]; if(card.flipped || card.solved) return;
-      const cardElement = document.querySelector(`#grid-memory div[data-id='${cardId}']`);
-      card.flipped = true; cardElement.innerText = card.symbol;
-      cardElement.className = "aspect-square flex items-center justify-center text-lg sm:text-xl rounded-lg border border-slate-700 bg-slate-800 text-slate-100 scale-95 select-none";
-      selectedMemoryCards.push(card);
-      if(selectedMemoryCards.length === 2) {
-        memoryMovesCount++; document.getElementById('moves-memory').innerText = memoryMovesCount;
-        lockMemoryGrid = true; checkMemoryMatch();
-      }
-    }
-    function checkMemoryMatch() {
-      const [c1, c2] = selectedMemoryCards;
-      if(c1.symbol === c2.symbol) {
-        c1.solved = true; c2.solved = true;
-        document.querySelector(`#grid-memory div[data-id='${c1.id}']`).classList.add('border-green-500/30');
-
-        document.querySelector(`#grid-memory div[data-id='${c2.id}']`).classList.add('border-green-500/30');
-        selectedMemoryCards = []; lockMemoryGrid = false; evaluateMemoryVictory();
-      } else {
-        setTimeout(() => {
-          const el1 = document.querySelector(`#grid-memory div[data-id='${c1.id}']`);
-          const el2 = document.querySelector(`#grid-memory div[data-id='${c2.id}']`);
-          c1.flipped = false; c2.flipped = false;
-          el1.innerText = "🟩"; el1.className = "aspect-square flex items-center justify-center text-lg sm:text-xl rounded-lg border border-slate-800 cursor-pointer bg-emerald-800 text-transparent select-none";
-          el2.innerText = "🟩"; el2.className = "aspect-square flex items-center justify-center text-lg sm:text-xl rounded-lg border border-slate-800 cursor-pointer bg-emerald-800 text-transparent select-none";
-          selectedMemoryCards = []; lockMemoryGrid = false;
-        }, 700);
-      }
-    }
-    function evaluateMemoryVictory() {
-      if(memoryDeck.every(c => c.solved)) {
-        const m = document.getElementById('msg-memory'); m.innerText = i18nDict[activeLang]['winMemory']; m.classList.remove('hidden');
-      }
-    }
-
-
-
-    // ==========================================
-    // MODULE 5: FIREBASE DRIVEN REALTIME GLOBAL FORUM ENGINE
-    // ==========================================
-    function initBoardEngine() {
-      // 過去に入力された保存済みのプレイヤー名があれば復元
-      const savedUsername = localStorage.getItem('maimod_username_v2');
-      if (savedUsername) {
-        document.getElementById('board-username').value = savedUsername;
-      }
-
-      if (firebaseConfig.apiKey && !firebaseConfig.apiKey.startsWith("YOUR_FIREBASE")) {
-        try {
-          firebase.initializeApp(firebaseConfig);
-          db = firebase.firestore();
-          useFirebase = true;
-        } catch (e) {
-          console.error("Firebase初期化失敗。ローカルモードに移行します:", e);
-        }
-      }
-
-
-      if (useFirebase) {
-        db.collection("maimod_messages").orderBy("timestamp", "asc").limit(50)
-          .onSnapshot((snapshot) => {
-            boardMessages = [];
-            snapshot.forEach((doc) => {
-              const data = doc.data();
-              boardMessages.push({
-                id: doc.id,
-                user: data.user,
-                text: data.text,
-                time: data.time || new Date(data.timestamp?.toDate()).toLocaleString()
-              });
             });
-            if (currentActiveTab === 'board') renderBoardContent();
-          }, (error) => {
-            console.error("Firestore同期ストリームエラー:", error);
-          });
-      } else {
-        const savedStorageData = localStorage.getItem('maimod_synced_forum_v3');
-
-        if (savedStorageData) {
-          boardMessages = JSON.parse(savedStorageData);
-        } else {
-          boardMessages = [
-            { id: 101, user: "⚙️ System Staff", text: "# maimodserver 公式告知\nGitHub Pagesでの公開準備完了！このHTMLファイルをそのままプッシュすればサイトが公開されます。\n- 接続アドレス: `katherine-tomtom.tun.ply.gg`\n\n※名前入力欄を追加しました！お好きなハンドルネームを設定して投稿できます。入力した名前はブラウザに自動保存されます。", time: "2026/10/19 12:00:00" },
-            { id: 102, user: "⛏️ MinePlayer", text: "匿名から好きな名前に変えられるの便利！**マークダウン記法**のパースとも相性バッチリですね。", time: "2026/10/19 14:22:15" }
-          ];
-          localStorage.setItem('maimod_synced_forum_v3', JSON.stringify(boardMessages));
         }
 
-        window.addEventListener('storage', function(event) {
-          if (event.key === 'maimod_synced_forum_v3' && event.newValue) {
-            boardMessages = JSON.parse(event.newValue);
-            if (currentActiveTab === 'board') renderBoardContent();
-          }
-        });
-      }
-    }
+        // 雷鳴・稲光の制御用変数
+        let lightningCounter = 0;
+        let nextLightningTurn = Math.floor(Math.random() * 200) + 150;
+
+        function drawWeather() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // 1. 激しい叩きつける雨の描画
+            for (let i = 0; i < maxDrops; i++) {
+                const d = drops[i];
+                ctx.strokeStyle = `rgba(148, 163, 184, ${d.o})`;
+                ctx.lineWidth = 1.5;
+                ctx.beginPath();
+                ctx.moveTo(d.x, d.y);
+                ctx.lineTo(d.x - 2, d.y + d.l); // 強い風に煽られる傾き
+                ctx.stroke();
+
+                
+                d.y += d.v;
+                d.x -= 2; // 横風の影響
+                
+                if (d.y > canvas.height || d.x < 0) {
+                    d.y = -d.l;
+                    d.x = Math.random() * (canvas.width + 100);
+                }
+            }
+
+            // 2. 突然画面が光る稲妻（雷雨）演出の動的演算
+            lightningCounter++;
+            if (lightningCounter >= nextLightningTurn) {
+                // 瞬間的に背景を白く発光させるフラッシュ処理
+                bodyEl.classList.add('lightning-flash');
+                
+                setTimeout(() => {
+                    bodyEl.classList.remove('lightning-flash');
+                }, Math.floor(Math.random() * 60) + 30);
 
 
-    function renderBoardContent() {
-      const container = document.getElementById('board-messages');
-      container.innerHTML = '';
+                // 連続で光るダブル落雷のシミュレート
+                if (Math.random() > 0.4) {
+                    setTimeout(() => {
+                        bodyEl.classList.add('lightning-flash');
+                        setTimeout(() => {
+                            bodyEl.classList.remove('lightning-flash');
+                        }, Math.floor(Math.random() * 40) + 20);
+                    }, 150);
+                }
 
-      boardMessages.forEach(msg => {
-        const itemNode = document.createElement('div');
-        itemNode.className = "bg-slate-900 border border-slate-800 p-2.5 rounded-lg space-y-1 shadow-sm";
-        
-        const metaBar = document.createElement('div');
-        metaBar.className = "flex justify-between items-center text-[10px] text-slate-500 font-mono border-b border-slate-800/60 pb-1 select-none";
-        metaBar.innerHTML = `<span class="font-bold text-green-400 font-pixel">${escapeHTML(msg.user)}</span><span>${msg.time}</span>`;
-        
-        const contentBox = document.createElement('div');
-        contentBox.className = "text-slate-200 leading-relaxed text-xs break-words pt-0.5 space-y-1";
-        contentBox.innerHTML = customMarkdownParser(msg.text);
+                lightningCounter = 0;
+                nextLightningTurn = Math.floor(Math.random() * 250) + 180; // 次の落雷までの間隔
+            }
+            
+            requestAnimationFrame(drawWeather);
+        }
 
-        itemNode.appendChild(metaBar);
-        itemNode.appendChild(contentBox);
-        container.appendChild(itemNode);
-
-      });
-
-      container.scrollTop = container.scrollHeight;
-    }
-
-    function postBoardMessage() {
-      const nameInputRef = document.getElementById('board-username');
-      const inputRef = document.getElementById('board-input');
-      
-      let typedName = nameInputRef.value.trim();
-      const textContext = inputRef.value.trim();
-      if (!textContext) return;
-
-      // 名前の入力がない場合の多言語デフォルトフォールバック
-      if (!typedName) {
-        typedName = activeLang === 'ja' ? "匿名プレイヤー" : "Anonymous Miner";
-      } else {
-        localStorage.setItem('maimod_username_v2', typedName); // 次回用に記憶
-      }
+        // ループ開始
+        drawWeather();
 
 
-      const timestampStr = new Date().toLocaleString();
-
-      if (useFirebase) {
-        db.collection("maimod_messages").add({
-          user: typedName,
-          text: textContext,
-          time: timestampStr,
-          timestamp: firebase.firestore.FieldValue.serverTimestamp()
-        }).then(() => {
-          inputRef.value = '';
-        }).catch((err) => {
-          console.error("Firestoreへの送信に失敗しました:", err);
-        });
-      } else {
-        const newPayload = {
-          id: Date.now() + Math.random(),
-          user: typedName,
-          text: textContext,
-          time: timestampStr
-
-        };
-        boardMessages.push(newPayload);
-        localStorage.setItem('maimod_synced_forum_v3', JSON.stringify(boardMessages));
-        inputRef.value = '';
-        renderBoardContent();
-      }
-    }
-
-    function customMarkdownParser(rawString) {
-      let html = escapeHTML(rawString);
-      html = html.replace(/^#\s+(.+)$/gm, '<h4 class="text-sm font-bold text-yellow-400 mt-1 font-pixel">$1</h4>');
-      html = html.replace(/\*\*(.*?)\*\*/g, '<strong class="text-green-400 font-bold">$1</strong>');
-      html = html.replace(/`(.*?)`/g, '<code class="bg-slate-950 px-1 py-0.5 rounded text-pink-400 font-mono text-[10px]">$1</code>');
-      html = html.replace(/^-\s+(.+)$/gm, '<div class="flex items-center space-x-1.5 pl-1"><span class="text-green-500 text-[10px]">■</span><span>$1</span></div>');
-      return html.replace(/\n/g, '<br>');
-    }
-
-    function escapeHTML(str) {
-      return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-
-    }
+        // タブ項目の切り替え処理
+        let currentMode = 'ov';
+        function modeSelect(mode) {
+            currentMode = mode;
+            const buttons = {
+                ov: document.getElementById('btn-ov'),
+                jn: document.getElementById('btn-jn'),
+                pl: document.getElementById('btn-pl'),
+                md: document.getElementById('btn-md'),
+                lw: document.getElementById('btn-lw')
+            };
+            const nodes = {
+                ov: document.getElementById('node-ov'),
+                jn: document.getElementById('node-jn'),
+                pl: document.getElementById('node-pl'),
+                md: document.getElementById('node-md'),
+                lw: document.getElementById('node-lw')
+            };
 
 
-    // --- GLOBAL KEYBOARD EDGE CAPTURE HUB ---
-    window.addEventListener('keydown', function(event) {
-      if(currentActiveTab === 'game2048') {
-        if(event.key === 'ArrowUp') move2048('up'); if(event.key === 'ArrowDown') move2048('down');
-        if(event.key === 'ArrowLeft') move2048('left'); if(event.key === 'ArrowRight') move2048('right');
-      }
-      if(currentActiveTab === 'tetris') {
-        if(event.key === 'ArrowLeft') handleTetrisControl('left'); if(event.key === 'ArrowRight') handleTetrisControl('right');
-        if(event.key === 'ArrowDown') handleTetrisControl('down'); if(event.key === 'ArrowUp') handleTetrisControl('rotate');
-        if(event.key === ' ') handleTetrisControl('drop');
-      }
-      if(currentActiveTab === 'snake') {
-        if(event.key === 'ArrowUp') handleSnakeControl('up'); if(event.key === 'ArrowDown') handleSnakeControl('down');
-        if(event.key === 'ArrowLeft') handleSnakeControl('left'); if(event.key === 'ArrowRight') handleSnakeControl('right');
-      }
-    });
+            // 全て非表示に設定
+            for (let k in buttons) {
+                buttons[k].className = "flex-1 pb-3 text-center transition-all text-slate-600 border-b-2 border-transparent hover:text-slate-400";
+                nodes[k].classList.add('panel-hidden');
+                nodes[k].classList.remove('panel-visible');
+            }
 
+            // 選択ノードの強調・表示
+            buttons[mode].className = "flex-1 pb-3 text-center transition-all text-slate-400 border-b-2 border-slate-500 font-bold";
+            nodes[mode].classList.remove('panel-hidden');
+            nodes[mode].classList.add('panel-visible');
 
-  </script>
+            const msg = document.getElementById('console-msg');
+            if (mode === 'ov') msg.textContent = "暗雲の隙間から概要情報を取得しました。";
+            else if (mode === 'jn') msg.textContent = "雨音に紛れて参加手順をロードしました。";
+            else if (mode === 'pl') msg.textContent = "荒涼たる空間内の主要施設リストを提示します。";
+            else if (mode === 'md') msg.textContent = "雷鳴轟く広報映像プレイヤーが稼働中です。";
+            else msg.textContent = "規律維持のための利用の規則を明示しました。";
+        }
+
+    </script>
 </body>
 </html>
 
