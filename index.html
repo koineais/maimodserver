@@ -1,11 +1,11 @@
-# maimodserver // 雷雨ノ調和案内盤
+# maimodserver // 雷雨狂瀾ノ試練案内盤
 
 <!DOCTYPE html>
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>雷雨公式案内盤</title>
+    <title>雷雨公式案内盤ならびに思考試練</title>
     <!-- 現代的な骨組み構築用（テイルウィンド） -->
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
@@ -36,15 +36,11 @@
             backdrop-filter: blur(12px);
             transition: border 0.5s ease, box-shadow 0.5s ease;
         }
-        .modern-card:hover {
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            box-shadow: 0 25px 60px -10px rgba(0, 0, 0, 0.95);
-        }
-
         
         /* 荒天描画領域 */
         #weather-canvas {
             position: fixed;
+
             top: 0; left: 0; width: 100%; height: 100%;
             pointer-events: none;
             z-index: 1;
@@ -60,17 +56,32 @@
         }
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(4px); }
-
             to { opacity: 1; transform: translateY(0); }
         }
 
         /* ふわっと動くボタン効果 */
+
         .interactive-btn {
             transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
         }
         .interactive-btn:active {
             transform: scale(0.97);
         }
+
+        /* ２０４８・雷雨版専用の数値配色格子（英語禁止仕様） */
+        .tile-empty { background-color: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.03); }
+        .tile-2 { background-color: rgba(148, 163, 184, 0.1); color: #cbd5e1; font-weight: 700; box-shadow: inset 0 0 10px rgba(255,255,255,0.05); }
+        .tile-4 { background-color: rgba(100, 116, 139, 0.2); color: #94a3b8; font-weight: 700; }
+        .tile-8 { background-color: rgba(71, 85, 105, 0.3); color: #64748b; border: 1px solid rgba(148, 163, 184, 0.2); }
+        .tile-16 { background-color: rgba(30, 41, 59, 0.5); color: #38bdf8; font-weight: bold; }
+        .tile-32 { background-color: rgba(15, 23, 42, 0.7); color: #0ea5e9; text-shadow: 0 0 8px rgba(14,165,233,0.4); }
+        .tile-64 { background-color: rgba(13, 148, 136, 0.2); color: #2dd4bf; }
+        .tile-128 { background-color: rgba(15, 118, 110, 0.4); color: #a7f3d0; box-shadow: 0 0 12px rgba(45,212,191,0.3); }
+        .tile-256 { background-color: rgba(67, 56, 202, 0.3); color: #818cf8; }
+        .tile-512 { background-color: rgba(79, 70, 229, 0.4); color: #c084fc; box-shadow: 0 0 15px rgba(168,85,247,0.4); }
+        .tile-1024 { background-color: rgba(147, 51, 234, 0.5); color: #f472b6; }
+
+        .tile-2048 { background-color: rgba(220, 38, 38, 0.4); color: #fecdd3; box-shadow: 0 0 25px rgba(239,68,68,0.7); animation: pulse 1s infinite; }
     </style>
 </head>
 <body class="min-h-screen p-4 md:p-8 flex flex-col items-center justify-center antialiased">
@@ -80,35 +91,36 @@
 
     <!-- 全体格納容器 -->
     <div class="w-full max-w-2xl modern-card rounded-3xl p-6 md:p-8 flex flex-col gap-6 modern-shadow relative z-10">
-
         
-        <!-- 最上部・状況表示（外観変更項目は完全廃止） -->
+        <!-- 最上部・状況表示 -->
         <div class="flex items-center justify-between border-b border-white/5 pb-4">
             <div class="flex items-center gap-2 text-xs tracking-wider text-slate-500 font-medium">
                 <span class="w-2 h-2 rounded-full bg-slate-600 animate-pulse"></span>
                 <span>【 接続先情報：埋戻サーバー 】</span>
             </div>
             <div class="text-right text-[10px] font-bold text-slate-500 tracking-widest">
-                気象設定：永続型雷雨環境
+                気象：永続型雷雨 // 試練：思考盤二零四八
+
             </div>
         </div>
 
         <!-- 現代的・水平多点選択帯 -->
         <div class="flex flex-wrap border-b border-white/5 text-xs md:text-sm font-medium">
             <button id="btn-ov" onclick="modeSelect('ov')" class="flex-1 pb-3 text-center transition-all text-slate-400 border-b-2 border-slate-500 font-bold">概要</button>
+            <button id="btn-gm" onclick="modeSelect('gm')" class="flex-1 pb-3 text-center transition-all text-slate-600 border-b-2 border-transparent hover:text-slate-400">思考試練</button>
             <button id="btn-jn" onclick="modeSelect('jn')" class="flex-1 pb-3 text-center transition-all text-slate-600 border-b-2 border-transparent hover:text-slate-400">参加の手順</button>
             <button id="btn-pl" onclick="modeSelect('pl')" class="flex-1 pb-3 text-center transition-all text-slate-600 border-b-2 border-transparent hover:text-slate-400">空間内名所</button>
             <button id="btn-md" onclick="modeSelect('md')" class="flex-1 pb-3 text-center transition-all text-slate-600 border-b-2 border-transparent hover:text-slate-400">紹介映像</button>
             <button id="btn-lw" onclick="modeSelect('lw')" class="flex-1 pb-3 text-center transition-all text-slate-600 border-b-2 border-transparent hover:text-slate-400">利用の規則</button>
-
         </div>
 
-        <!-- 各種情報提示盤 -->
+        <!-- 各種情報ならびに遊戯提示盤 -->
         
         <!-- 1. 概要部 -->
         <div id="node-ov" class="flex flex-col gap-4 panel-visible">
             <div class="space-y-4">
                 <div class="text-xs font-bold text-slate-400 tracking-widest uppercase">// サーバー基本情報</div>
+
                 <div class="grid grid-cols-2 gap-3 text-xs">
                     <div class="border border-white/5 bg-white/[0.01] p-3 rounded-2xl">
                         <span class="block text-slate-600 text-[10px] mb-1">空間識別名</span>
@@ -120,8 +132,7 @@
                     </div>
                 </div>
                 <p class="text-xs leading-relaxed pt-1 text-slate-400">
-
-                    当空間は、過度なシステム変更を施さない、マインクラフト本来の標準規則に準拠した複数人同時遊戯用ワールドです。参加にあたっての追加データ導入は一切不要であり、お持ちの端末からそのまま手軽に合流し、建築や生活の共有をお楽しみいただけます。
+                    当空間は、過度なシステム変更を施さない、マインクラフト本来の標準規則に準拠した複数人同時遊戯用ワールドです。上の「思考試練」項目より、雨音を聞きながら指での滑り操作（スワイプ）や方向ボタンで遊べる遊戯（二零四八）に挑戦いただけます。
                 </p>
             </div>
             
@@ -129,6 +140,7 @@
                 <div class="text-xs">
                     <span class="block text-slate-600 text-[10px]">公式情報閲覧用回線</span>
                     <span class="font-bold text-slate-300">外部公開案内板（公式ウェブサイト）</span>
+
                 </div>
                 <a href="https://maimodserver.1my.jp/" target="_blank" rel="noopener noreferrer" class="px-4 py-2 rounded-xl bg-slate-700 text-xs font-bold text-slate-200 hover:bg-slate-600 transition-all shadow-sm interactive-btn">
                     移動する
@@ -136,11 +148,70 @@
             </div>
         </div>
 
-        <!-- 2. 参加手順部 -->
+        <!-- 2. 二零四八・雷雨版遊戯部（スワイプ・引換券機能付き） -->
+        <div id="node-gm" class="flex flex-col gap-4 panel-hidden items-center">
+            <div class="w-full flex justify-between items-center text-xs">
+                <div class="text-left">
+                    <div class="font-bold text-slate-400 tracking-wider">// 思考試練：二零四八</div>
+                    <div class="text-[10px] text-slate-600 mt-0.5">※画面スワイプ（滑り操作）またはキーボードで移動可能</div>
+                </div>
+                <div class="flex gap-2">
+                    <div class="bg-white/[0.02] border border-white/5 px-3 py-1.5 rounded-xl text-center">
+                        <span class="block text-[9px] text-slate-600">現在得点</span>
+                        <span id="game-score" class="font-bold text-slate-300">0</span>
+                    </div>
+
+                    <div class="bg-white/[0.02] border border-white/5 px-3 py-1.5 rounded-xl text-center">
+                        <span class="block text-[9px] text-slate-600">最高記録</span>
+                        <span id="game-best" class="font-bold text-slate-300">0</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ゲームメイン盤面（接触スワイプ対応） -->
+            <div class="relative bg-black/40 p-3 rounded-2xl border border-white/5 w-72 h-72 flex flex-col justify-between modern-shadow select-none" id="touch-zone">
+                <div class="grid grid-cols-4 gap-2 h-full w-full" id="grid-container">
+                    <!-- 動的に内部セルが配置される -->
+                </div>
+                
+                <!-- 終局時ならびに恩賞引換用暗幕 -->
+                <div id="game-over-mask" class="absolute inset-0 bg-black/90 rounded-2xl flex flex-col items-center justify-center gap-3 opacity-0 pointer-events-none transition-opacity duration-500 p-4 text-center">
+                    <span class="text-xs font-bold text-amber-400 tracking-widest">【 試練達成・恩賞引換用暗号 】</span>
+                    
+                    <!-- サーバー配布連携テキスト領域 -->
+                    <div class="w-full bg-white/[0.02] border border-white/10 p-2.5 rounded-xl font-mono text-xs text-slate-200 select-all my-1 flex justify-between items-center gap-2">
+
+                        <span id="reward-code" class="font-bold tracking-wide">code 0</span>
+                        <button onclick="copyRewardCode()" class="text-[10px] px-2 py-1 bg-slate-800 text-amber-300 rounded border border-slate-700 active:scale-95 transition-all">複写</button>
+                    </div>
+                    
+                    <p class="text-[10px] text-slate-500 leading-relaxed px-2">
+                        上記文言をコピーし、maimodserver内のチャット（対話）に貼り付けて発言することで恩賞アイテムが授与されます。
+                    </p>
+                    
+                    <button onclick="resetGame()" class="mt-2 px-3 py-1.5 rounded-lg bg-slate-800 text-[11px] font-bold text-slate-300 border border-slate-700 hover:bg-slate-700 transition-all interactive-btn">
+                        新しく挑戦する
+                    </button>
+                </div>
+            </div>
+
+            <!-- 操作補助ボタン群 -->
+            <div class="flex flex-col items-center gap-1.5 mt-1">
+                <button onclick="moveDirection(0)" class="w-10 h-8 rounded-lg bg-white/[0.02] border border-white/5 flex items-center justify-center text-slate-400 hover:bg-white/[0.06] font-bold text-xs interactive-btn">▲</button>
+                <div class="flex gap-4">
+                    <button onclick="moveDirection(3)" class="w-10 h-8 rounded-lg bg-white/[0.02] border border-white/5 flex items-center justify-center text-slate-400 hover:bg-white/[0.06] font-bold text-xs interactive-btn">◀</button>
+
+                    <button onclick="resetGame()" class="px-3 h-8 rounded-lg bg-white/[0.01] border border-white/5 flex items-center justify-center text-[10px] text-slate-500 hover:bg-white/[0.04] transition-all interactive-btn">初期化</button>
+                    <button onclick="moveDirection(1)" class="w-10 h-8 rounded-lg bg-white/[0.02] border border-white/5 flex items-center justify-center text-slate-400 hover:bg-white/[0.06] font-bold text-xs interactive-btn">▶</button>
+                </div>
+                <button onclick="moveDirection(2)" class="w-10 h-8 rounded-lg bg-white/[0.02] border border-white/5 flex items-center justify-center text-slate-400 hover:bg-white/[0.06] font-bold text-xs interactive-btn">▼</button>
+            </div>
+        </div>
+
+        <!-- 3. 参加手順部 -->
         <div id="node-jn" class="flex flex-col gap-4 panel-hidden">
             <div class="space-y-3">
                 <div class="text-xs font-bold text-slate-400 tracking-widest uppercase mb-1">// 接続・合流の流れ</div>
-
                 <div class="flex flex-col gap-2.5">
                     <div class="flex gap-3 bg-white/[0.01] p-3.5 rounded-2xl border border-white/5 items-start">
                         <span class="bg-slate-700 text-slate-200 rounded-lg text-[10px] font-bold px-2 py-0.5 mt-0.5">一</span>
@@ -149,6 +220,7 @@
                     <div class="flex gap-3 bg-white/[0.01] p-3.5 rounded-2xl border border-white/5 items-start">
                         <span class="bg-slate-700 text-slate-200 rounded-lg text-[10px] font-bold px-2 py-0.5 mt-0.5">二</span>
                         <p class="text-xs leading-relaxed text-slate-400">多人数遊戯項目（マルチプレイ）を選択し、「サーバーを追加」を実行します。</p>
+
                     </div>
                     <div class="flex gap-3 bg-white/[0.01] p-3.5 rounded-2xl border border-white/5 items-start">
                         <span class="bg-slate-700 text-slate-200 rounded-lg text-[10px] font-bold px-2 py-0.5 mt-0.5">三</span>
@@ -160,15 +232,15 @@
                     </div>
                 </div>
             </div>
-
         </div>
 
-        <!-- 3. 空間内名所部 -->
+        <!-- 4. 空間内名所部 -->
         <div id="node-pl" class="flex flex-col gap-4 panel-hidden">
             <div class="space-y-3">
                 <div class="text-xs font-bold text-slate-400 tracking-widest uppercase mb-1">// 構築された主要施設</div>
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div class="p-4 rounded-2xl bg-white/[0.01] border border-white/5 space-y-1.5">
+
                         <span class="text-xs font-bold text-slate-300 flex items-center gap-1">📍 中央広場（初期出現地）</span>
                         <p class="text-[11px] leading-relaxed text-slate-500">全ての参加者が最初に降り立つ共有空間です。周辺案内板や備蓄箱が整備されています。</p>
                     </div>
@@ -180,7 +252,6 @@
                         <span class="text-xs font-bold text-slate-300 flex items-center gap-1">📍 公共移動網（街道）</span>
                         <p class="text-[11px] leading-relaxed text-slate-500">各参加者の拠点同士を迷わず安全に繋ぐため、照明が完備された舗装道路が敷設されています。</p>
                     </div>
-
                     <div class="p-4 rounded-2xl bg-white/[0.01] border border-white/5 space-y-1.5">
                         <span class="text-xs font-bold text-slate-300 flex items-center gap-1">📍 資源採取場</span>
                         <p class="text-[11px] leading-relaxed text-slate-500">建築用資材や鉱石を集めるための専用区画です。自然景観を損なわないよう地下深くへ伸びています。</p>
@@ -189,18 +260,17 @@
             </div>
         </div>
 
-        <!-- 4. 紹介映像部 (YouTube) -->
+
+        <!-- 5. 紹介映像部 (YouTube) -->
         <div id="node-md" class="flex flex-col gap-4 panel-hidden">
             <div class="flex flex-col items-center">
                 <div class="w-full text-xs font-bold text-slate-400 tracking-widest uppercase mb-3 text-left">// 関連広報映像（主題歌）</div>
                 
-                <!-- YouTube 接続構造（指定テンプレートに準拠・雷雨トーン調整） -->
                 <a href="https://www.youtube.com/watch?v=Wv_eXZ4J104" target="_blank" rel="noopener noreferrer" class="w-full flex justify-center" style="position: relative; display: inline-block; max-width: 560px; text-decoration: none;">
                     <img src="https://img.youtube.com/vi/Wv_eXZ4J104/hqdefault.jpg" alt="YouTube video preview" style="width: 100%; height: auto; border-radius: 16px; display: block; border: 1px solid rgba(255,255,255,0.05); box-shadow: 0 4px 20px rgba(0,0,0,0.5); opacity: 0.8;">
                     <svg viewBox="0 0 68 48" aria-hidden="true" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 68px; height: 48px; pointer-events: none;">
                         <path d="M66.52,7.74c-0.78-2.93-2.49-5.41-5.42-6.19C55.79,0.13,34,0,34,0S12.21,0.13,6.9,1.55 c-2.93,0.78-4.64,3.26-5.42,6.19C0.06,13.05,0,24,0,24s0.06,10.95,1.48,16.26c0.78,2.93,2.49,5.41,5.42,6.19 C12.21,47.87,34,48,34,48s21.79-0.13,27.1-1.55c2.93-0.78,4.64-3.26,5.42-6.19C67.94,34.95,68,24,68,24S67.94,13.05,66.52,7.74z" fill="#64748b" fill-opacity="0.9"></path>
                         <path d="M 45,24 27,14 27,34" fill="#fff"></path>
-
                     </svg>
                 </a>
                 
@@ -210,7 +280,8 @@
             </div>
         </div>
 
-        <!-- 5. 利用規則部 -->
+
+        <!-- 6. 利用規則部 -->
         <div id="node-lw" class="flex flex-col gap-4 panel-hidden">
             <div class="space-y-3 text-xs">
                 <div class="text-xs font-bold text-slate-400 tracking-widest uppercase mb-1">// 共同遊戯における厳守事項</div>
@@ -220,7 +291,6 @@
                 <div class="border-l-4 border-slate-600 bg-white/[0.01] p-3.5 rounded-r-2xl font-medium text-slate-400 border border-white/5">
                     ■ 全体への高負荷を招く恐れのある、大規模な自動化機構の過度な設置を制限します。
                 </div>
-
                 <div class="border-l-4 border-slate-600 bg-white/[0.01] p-3.5 rounded-r-2xl font-medium text-slate-400 border border-white/5">
                     ■ 参加者同士の礼節を重んじ、円滑かつ健全な共同生活の維持に努めてください。
                 </div>
@@ -230,19 +300,19 @@
         <!-- 最下部・案内コンソール -->
         <div class="text-[10px] text-slate-600 border-t border-white/5 pt-3 flex items-center gap-2 min-h-[24px]">
             <span class="text-slate-500">●</span> 
+
             <span id="console-msg" class="truncate font-medium tracking-wide">豪雨ならびに遠雷を検知。空間維持は正常です。</span>
         </div>
 
     </div>
 
     <script>
-        // 激しい雷雨シミュレーションの実装
+        // --- 1. 豪雨ならびに雷光シミュレーションの実装 ---
         const canvas = document.getElementById('weather-canvas');
         const ctx = canvas.getContext('2d');
         const bodyEl = document.body;
-
         
-        const maxDrops = 250; // 雨粒の量を大幅に増加（大雨）
+        const maxDrops = 250;
         const drops = [];
 
         function resizeCanvas() {
@@ -250,40 +320,53 @@
             canvas.height = window.innerHeight;
         }
         window.addEventListener('resize', resizeCanvas);
+
         resizeCanvas();
 
-        // 激しく激突する豪雨の初期配置
         for (let i = 0; i < maxDrops; i++) {
             drops.push({
                 x: Math.random() * canvas.width,
                 y: Math.random() * canvas.height,
-                l: Math.random() * 25 + 15, // 雨の筋を長く
-                v: Math.random() * 6 + 14,   // 落下速度を高速化
+                l: Math.random() * 25 + 15,
+                v: Math.random() * 6 + 14,
                 o: Math.random() * 0.2 + 0.1
-
             });
         }
 
-        // 雷鳴・稲光の制御用変数
+        function triggerLightning() {
+            bodyEl.classList.add('lightning-flash');
+            setTimeout(() => {
+                bodyEl.classList.remove('lightning-flash');
+            }, 50);
+            if (Math.random() > 0.5) {
+                setTimeout(() => {
+
+                    bodyEl.classList.add('lightning-flash');
+                    setTimeout(() => {
+                        bodyEl.classList.remove('lightning-flash');
+                    }, 40);
+                }, 120);
+            }
+        }
+
         let lightningCounter = 0;
         let nextLightningTurn = Math.floor(Math.random() * 200) + 150;
 
         function drawWeather() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             
-            // 1. 激しい叩きつける雨の描画
             for (let i = 0; i < maxDrops; i++) {
                 const d = drops[i];
                 ctx.strokeStyle = `rgba(148, 163, 184, ${d.o})`;
                 ctx.lineWidth = 1.5;
                 ctx.beginPath();
-                ctx.moveTo(d.x, d.y);
-                ctx.lineTo(d.x - 2, d.y + d.l); // 強い風に煽られる傾き
-                ctx.stroke();
 
+                ctx.moveTo(d.x, d.y);
+                ctx.lineTo(d.x - 2, d.y + d.l);
+                ctx.stroke();
                 
                 d.y += d.v;
-                d.x -= 2; // 横風の影響
+                d.x -= 2;
                 
                 if (d.y > canvas.height || d.x < 0) {
                     d.y = -d.l;
@@ -291,78 +374,269 @@
                 }
             }
 
-            // 2. 突然画面が光る稲妻（雷雨）演出の動的演算
             lightningCounter++;
             if (lightningCounter >= nextLightningTurn) {
-                // 瞬間的に背景を白く発光させるフラッシュ処理
-                bodyEl.classList.add('lightning-flash');
-                
-                setTimeout(() => {
-                    bodyEl.classList.remove('lightning-flash');
-                }, Math.floor(Math.random() * 60) + 30);
-
-
-                // 連続で光るダブル落雷のシミュレート
-                if (Math.random() > 0.4) {
-                    setTimeout(() => {
-                        bodyEl.classList.add('lightning-flash');
-                        setTimeout(() => {
-                            bodyEl.classList.remove('lightning-flash');
-                        }, Math.floor(Math.random() * 40) + 20);
-                    }, 150);
-                }
-
+                triggerLightning();
                 lightningCounter = 0;
-                nextLightningTurn = Math.floor(Math.random() * 250) + 180; // 次の落雷までの間隔
+                nextLightningTurn = Math.floor(Math.random() * 300) + 200;
             }
+
             
             requestAnimationFrame(drawWeather);
         }
-
-        // ループ開始
         drawWeather();
 
 
-        // タブ項目の切り替え処理
-        let currentMode = 'ov';
+        // --- 2. 二零四八・雷雨版遊戯ロジックの実装 ---
+        let board = Array(16).fill(0);
+        let score = 0;
+        let bestScore = 0;
+
+        const gridContainer = document.getElementById('grid-container');
+        const scoreEl = document.getElementById('game-score');
+        const bestEl = document.getElementById('game-best');
+        const maskEl = document.getElementById('game-over-mask');
+        const rewardCodeEl = document.getElementById('reward-code');
+
+        function initGame() {
+            board = Array(16).fill(0);
+
+            score = 0;
+            scoreEl.textContent = score;
+            maskEl.classList.add('opacity-0', 'pointer-events-none');
+            
+            generateTile();
+            generateTile();
+            renderBoard();
+        }
+
+        function generateTile() {
+            const emptyCells = [];
+            for (let i = 0; i < 16; i++) {
+                if (board[i] === 0) emptyCells.push(i);
+            }
+            if (emptyCells.length > 0) {
+                const randomCell = emptyCells[Math.floor(Math.random() * emptyCells.length)];
+                board[randomCell] = Math.random() < 0.9 ? 2 : 4;
+            }
+        }
+
+
+        function renderBoard() {
+            gridContainer.innerHTML = '';
+            for (let i = 0; i < 16; i++) {
+                const cell = document.createElement('div');
+                cell.className = 'w-full h-full rounded-xl flex items-center justify-center text-xs md:text-sm transition-all duration-100 ';
+                
+                const val = board[i];
+                if (val === 0) {
+                    cell.classList.add('tile-empty');
+                } else {
+                    cell.classList.add('tile-' + (val <= 2048 ? val : 2048));
+                    cell.textContent = val;
+                }
+                gridContainer.appendChild(cell);
+            }
+        }
+
+        function move(dir) {
+            let moved = false;
+
+            let currentLineScore = 0;
+
+            for (let i = 0; i < 4; i++) {
+                let row = [];
+                for (let j = 0; j < 4; j++) {
+                    let idx;
+                    if (dir === 0) idx = j * 4 + i;
+                    else if (dir === 1) idx = i * 4 + (3 - j);
+                    else if (dir === 2) idx = (3 - j) * 4 + i;
+                    else idx = i * 4 + j;
+                    row.push(board[idx]);
+                }
+
+                let filtered = row.filter(v => v !== 0);
+                let mergedRow = [];
+                
+                for (let j = 0; j < filtered.length; j++) {
+                    if (filtered[j] === filtered[j + 1]) {
+                        const mergedVal = filtered[j] * 2;
+
+                        mergedRow.push(mergedVal);
+                        currentLineScore += mergedVal;
+                        j++;
+                    } else {
+                        mergedRow.push(filtered[j]);
+                    }
+                }
+                while (mergedRow.length < 4) mergedRow.push(0);
+
+                for (let j = 0; j < 4; j++) {
+                    let idx;
+                    if (dir === 0) idx = j * 4 + i;
+                    else if (dir === 1) idx = i * 4 + (3 - j);
+                    else if (dir === 2) idx = (3 - j) * 4 + i;
+                    else idx = i * 4 + j;
+
+                    if (board[idx] !== mergedRow[j]) {
+                        moved = true;
+                        board[idx] = mergedRow[j];
+
+                    }
+                }
+            }
+
+            if (moved) {
+                triggerLightning();
+                
+                score += currentLineScore;
+                if (score > bestScore) {
+                    bestScore = score;
+                    bestEl.textContent = bestScore;
+                }
+                scoreEl.textContent = score;
+
+                generateTile();
+                renderBoard();
+
+                // 終了確認、または２０４８達成時に暗号を発行して幕を出す
+                if (checkGameOver() || board.includes(2048)) {
+
+                    rewardCodeEl.textContent = "code " + score;
+                    maskEl.classList.remove('opacity-0', 'pointer-events-none');
+                }
+                
+                document.getElementById('console-msg').textContent = "試練進行中。得点：" + score + " を記録。";
+            }
+        }
+
+        function moveDirection(d) {
+            move(d);
+        }
+
+        function resetGame() {
+            initGame();
+            document.getElementById('console-msg').textContent = "思考試練盤の初期化を完了しました。";
+        }
+
+        function checkGameOver() {
+            if (board.includes(0)) return false;
+
+            for (let i = 0; i < 4; i++) {
+                for (let j = 0; j < 4; j++) {
+                    const current = board[i * 4 + j];
+                    if (j < 3 && current === board[i * 4 + (j + 1)]) return false;
+                    if (i < 3 && current === board[(i + 1) * 4 + j]) return false;
+                }
+            }
+            return true;
+        }
+
+        // --- スマートフォン用・画面滑り（スワイプ）操作検知の実装 ---
+        const touchZone = document.getElementById('touch-zone');
+        let touchStartX = 0;
+        let touchStartY = 0;
+
+        touchZone.addEventListener('touchstart', (e) => {
+            touchStartX = e.touches[0].clientX;
+            touchStartY = e.touches[0].clientY;
+        }, { passive: true });
+
+
+        touchZone.addEventListener('touchend', (e) => {
+            if (!touchStartX || !touchStartY) return;
+
+            let touchEndX = e.changedTouches[0].clientX;
+            let touchEndY = e.changedTouches[0].clientY;
+
+            let diffX = touchEndX - touchStartX;
+            let diffY = touchEndY - touchStartY;
+
+            // 移動距離の最小閾値を判定（誤作動防止）
+            if (Math.abs(diffX) > 30 || Math.abs(diffY) > 30) {
+                if (Math.abs(diffX) > Math.abs(diffY)) {
+                    // 左右方向のスライド
+                    if (diffX > 0) move(1); // 右
+                    else move(3); // 左
+                } else {
+                    // 上下方向のスライド
+                    if (diffY > 0) move(2); // 下
+                    else move(0); // 上
+
+                }
+            }
+            touchStartX = 0;
+            touchStartY = 0;
+        }, { passive: true });
+
+        // 物理キーボード制御
+        window.addEventListener('keydown', (e) => {
+            if (document.getElementById('node-gm').classList.contains('panel-hidden')) return;
+            if (e.key === 'ArrowUp') { e.preventDefault(); move(0); }
+            else if (e.key === 'ArrowRight') { e.preventDefault(); move(1); }
+            else if (e.key === 'ArrowDown') { e.preventDefault(); move(2); }
+            else if (e.key === 'ArrowLeft') { e.preventDefault(); move(3); }
+        });
+
+        // 恩賞暗号の複写（クリップボード保存）処理
+        function copyRewardCode() {
+            const codeText = document.getElementById('reward-code').textContent;
+            
+
+            // 安全なテキスト複写（ブラウザ互換仕様）
+            const dummyTextArea = document.createElement('textarea');
+            dummyTextArea.value = codeText;
+            document.body.appendChild(dummyTextArea);
+            dummyTextArea.select();
+            document.execCommand('copy');
+            document.body.removeChild(dummyTextArea);
+            
+            document.getElementById('console-msg').textContent = "引換用暗号【 " + codeText + " 】をクリップボードに複写しました！";
+        }
+
+        // 遊戯盤初期展開
+        initGame();
+
+
+        // --- 3. タブ選択制御 ---
         function modeSelect(mode) {
-            currentMode = mode;
-            const buttons = {
-                ov: document.getElementById('btn-ov'),
-                jn: document.getElementById('btn-jn'),
-                pl: document.getElementById('btn-pl'),
-                md: document.getElementById('btn-md'),
-                lw: document.getElementById('btn-lw')
-            };
+            const tabs = ['btn-ov', 'btn-gm', 'btn-jn', 'btn-pl', 'btn-md', 'btn-lw'];
             const nodes = {
+
                 ov: document.getElementById('node-ov'),
+                gm: document.getElementById('node-gm'),
                 jn: document.getElementById('node-jn'),
                 pl: document.getElementById('node-pl'),
                 md: document.getElementById('node-md'),
                 lw: document.getElementById('node-lw')
             };
 
-
-            // 全て非表示に設定
-            for (let k in buttons) {
-                buttons[k].className = "flex-1 pb-3 text-center transition-all text-slate-600 border-b-2 border-transparent hover:text-slate-400";
+            for (let k in nodes) {
                 nodes[k].classList.add('panel-hidden');
                 nodes[k].classList.remove('panel-visible');
             }
+            tabs.forEach(id => {
+                const btn = document.getElementById(id);
+                if (id === 'btn-' + mode) {
+                    btn.className = "flex-1 pb-3 text-center transition-all text-slate-400 border-b-2 border-slate-500 font-bold";
+                } else {
+                    btn.className = "flex-1 pb-3 text-center transition-all text-slate-600 border-b-2 border-transparent hover:text-slate-400";
+                }
 
-            // 選択ノードの強調・表示
-            buttons[mode].className = "flex-1 pb-3 text-center transition-all text-slate-400 border-b-2 border-slate-500 font-bold";
+            });
+
+            nodes[mode].className = "flex-1 pb-3 text-center transition-all text-slate-400 border-b-2 border-slate-500 font-bold";
             nodes[mode].classList.remove('panel-hidden');
             nodes[mode].classList.add('panel-visible');
 
             const msg = document.getElementById('console-msg');
             if (mode === 'ov') msg.textContent = "暗雲の隙間から概要情報を取得しました。";
+            else if (mode === 'gm') msg.textContent = "思考試練（二零四八・雷雨版）の準備が完了しました。";
             else if (mode === 'jn') msg.textContent = "雨音に紛れて参加手順をロードしました。";
             else if (mode === 'pl') msg.textContent = "荒涼たる空間内の主要施設リストを提示します。";
             else if (mode === 'md') msg.textContent = "雷鳴轟く広報映像プレイヤーが稼働中です。";
             else msg.textContent = "規律維持のための利用の規則を明示しました。";
         }
-
     </script>
 </body>
 </html>
